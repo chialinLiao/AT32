@@ -27,11 +27,11 @@
 /* includes ------------------------------------------------------------------*/
 #include "at32f435_437_int.h"
 
-/** @addtogroup AT32F435_periph_template
+/** @addtogroup UTILITIES_examples
   * @{
   */
-
-/** @addtogroup 435_LED_toggle
+  
+/** @addtogroup FreeRTOS_demo
   * @{
   */
 
@@ -101,9 +101,9 @@ void UsageFault_Handler(void)
   * @param  none
   * @retval none
   */
-void SVC_Handler(void)
-{
-}
+//void SVC_Handler(void)
+//{
+//}
 
 /**
   * @brief  this function handles debug monitor exception.
@@ -119,18 +119,18 @@ void DebugMon_Handler(void)
   * @param  none
   * @retval none
   */
-void PendSV_Handler(void)
-{
-}
+//void PendSV_Handler(void)
+//{
+//}
 
 /**
   * @brief  this function handles systick handler.
   * @param  none
   * @retval none
   */
-void SysTick_Handler(void)
-{
-}
+//void SysTick_Handler(void)
+//{
+//}
 
 /**
   * @}

@@ -7,11 +7,11 @@
   **************************************************************************
   *                       Copyright notice & Disclaimer
   *
-  * The software Board Support Package (BSP) that is made available to
-  * download from Artery official website is the copyrighted work of Artery.
-  * Artery authorizes customers to use, copy, and distribute the BSP
-  * software and its related documentation for the purpose of design and
-  * development in conjunction with Artery microcontrollers. Use of the
+  * The software Board Support Package (BSP) that is made available to 
+  * download from Artery official website is the copyrighted work of Artery. 
+  * Artery authorizes customers to use, copy, and distribute the BSP 
+  * software and its related documentation for the purpose of design and 
+  * development in conjunction with Artery microcontrollers. Use of the 
   * software is governed by this copyright notice and the following disclaimer.
   *
   * THIS SOFTWARE IS PROVIDED ON "AS IS" BASIS WITHOUT WARRANTIES,
@@ -26,79 +26,23 @@
 
 #include "at32f435_437_board.h"
 #include "at32f435_437_clock.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
-/** @addtogroup AT32F435_periph_template
+/** @addtogroup UTILITIES_examples
   * @{
   */
-
-/** @addtogroup 435_LED_toggle LED_toggle
+  
+/** @addtogroup FreeRTOS_demo
   * @{
   */
+TaskHandle_t led2_handler;
+TaskHandle_t led3_handler;
 
-#define DELAY                            100
-#define FAST                             1
-#define SLOW                             4
-
-uint8_t g_speed = FAST;
-
-void button_exint_init(void);
-void button_isr(void);
-
-/**
-  * @brief  configure button exint
-  * @param  none
-  * @retval none
-  */
-void button_exint_init(void)
-{
-  exint_init_type exint_init_struct;
-
-  crm_periph_clock_enable(CRM_SCFG_PERIPH_CLOCK, TRUE);
-  scfg_exint_line_config(SCFG_PORT_SOURCE_GPIOA, SCFG_PINS_SOURCE0);
-
-  exint_default_para_init(&exint_init_struct);
-  exint_init_struct.line_enable = TRUE;
-  exint_init_struct.line_mode = EXINT_LINE_INTERRUPUT;
-  exint_init_struct.line_select = EXINT_LINE_0;
-  exint_init_struct.line_polarity = EXINT_TRIGGER_RISING_EDGE;
-  exint_init(&exint_init_struct);
-
-  nvic_priority_group_config(NVIC_PRIORITY_GROUP_4);
-  nvic_irq_enable(EXINT0_IRQn, 0, 0);
-}
-
-/**
-  * @brief  button handler function
-  * @param  none
-  * @retval none
-  */
-void button_isr(void)
-{
-  /* delay 5ms */
-  delay_ms(5);
-
-  /* clear interrupt pending bit */
-  exint_flag_clear(EXINT_LINE_0);
-
-  /* check input pin state */
-  if(SET == gpio_input_data_bit_read(USER_BUTTON_PORT, USER_BUTTON_PIN))
-  {
-    if(g_speed == SLOW)
-      g_speed = FAST;
-    else
-      g_speed = SLOW;
-  }
-}
-
-/**
-  * @brief  exint0 interrupt handler
-  * @param  none
-  * @retval none
-  */
-void EXINT0_IRQHandler(void)
-{
-  button_isr();
-}
+/* led2 task */
+void led2_task_function(void *pvParameters);
+/* led3 task */
+void led3_task_function(void *pvParameters);
 
 /**
   * @brief  main function.
@@ -106,28 +50,81 @@ void EXINT0_IRQHandler(void)
   * @retval none
   */
 int main(void)
-{
+{  
   system_clock_config();
+ 
+  nvic_priority_group_config(NVIC_PRIORITY_GROUP_4);
+ 
+  /* init led2 and led3 */
+  at32_led_init(LED2);
+  at32_led_init(LED3);
+  
+  /* init usart1 */
+  uart_print_init(115200);
+  
+  /* enter critical */
+  taskENTER_CRITICAL(); 
 
-  at32_board_init();
+  /* create led2 task */
+  if(xTaskCreate((TaskFunction_t )led2_task_function,     
+                 (const char*    )"LED2_task",   
+                 (uint16_t       )512, 
+                 (void*          )NULL,
+                 (UBaseType_t    )2,
+                 (TaskHandle_t*  )&led2_handler) != pdPASS)
+  {
+    printf("LED2 task could not be created as there was insufficient heap memory remaining.\r\n");
+  }        
+  else
+  {
+    printf("LED2 task was created successfully.\r\n");
+  }
+  /* create led3 task */
+  if(xTaskCreate((TaskFunction_t )led3_task_function,     
+                 (const char*    )"LED3_task",   
+                 (uint16_t       )512, 
+                 (void*          )NULL,
+                 (UBaseType_t    )2,
+                 (TaskHandle_t*  )&led3_handler) != pdPASS) 
+  {
+    printf("LED3 task could not be created as there was insufficient heap memory remaining.\r\n");
+  }
+  else
+  {
+    printf("LED3 task was created successfully.\r\n");
+  }
+ 
+  /* exit critical */            
+  taskEXIT_CRITICAL();      
+              
+  /* start scheduler */            
+  vTaskStartScheduler(); 
+}
 
-  button_exint_init();
-
+/* led2 task function */
+void led2_task_function(void *pvParameters)
+{
   while(1)
   {
     at32_led_toggle(LED2);
-    delay_ms(g_speed * DELAY);
+    vTaskDelay(1000);
+  }
+}
+
+/* led3 task function */
+void led3_task_function(void *pvParameters)
+{
+  while(1)
+  {
     at32_led_toggle(LED3);
-    delay_ms(g_speed * DELAY);
-    at32_led_toggle(LED4);
-    delay_ms(g_speed * DELAY);
+    vTaskDelay(500);
   }
 }
 
 /**
   * @}
-  */
+  */ 
 
 /**
   * @}
-  */
+  */ 
