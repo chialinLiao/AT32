@@ -113,6 +113,8 @@ int main(void)
 
   button_exint_init();
 
+  SysTick_Config(1000);
+
   while(1)
   {
     at32_led_toggle(LED2);
