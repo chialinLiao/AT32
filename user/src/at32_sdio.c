@@ -173,7 +173,7 @@ sd_error_status_type sd_init(void)
     sdio_clock_set(clkdiv);
 
     /* set transfer mode */
-    status = sd_device_mode_set(SD_TRANSFER_DMA_MODE);
+    status = sd_device_mode_set(SD_TRANSFER_POLLING_MODE);
   }
 
   if(status == SD_OK)
