@@ -7,11 +7,11 @@
   **************************************************************************
   *                       Copyright notice & Disclaimer
   *
-  * The software Board Support Package (BSP) that is made available to
-  * download from Artery official website is the copyrighted work of Artery.
-  * Artery authorizes customers to use, copy, and distribute the BSP
-  * software and its related documentation for the purpose of design and
-  * development in conjunction with Artery microcontrollers. Use of the
+  * The software Board Support Package (BSP) that is made available to 
+  * download from Artery official website is the copyrighted work of Artery. 
+  * Artery authorizes customers to use, copy, and distribute the BSP 
+  * software and its related documentation for the purpose of design and 
+  * development in conjunction with Artery microcontrollers. Use of the 
   * software is governed by this copyright notice and the following disclaimer.
   *
   * THIS SOFTWARE IS PROVIDED ON "AS IS" BASIS WITHOUT WARRANTIES,
@@ -24,82 +24,197 @@
   **************************************************************************
   */
 
+#include <stdbool.h>
+#include <string.h>
+#include "at32_sdio.h"
 #include "at32f435_437_board.h"
 #include "at32f435_437_clock.h"
+#include "ff.h" 
 
-/** @addtogroup AT32F435_periph_template
+/** @addtogroup AT32F435_periph_examples
   * @{
   */
 
-/** @addtogroup 435_LED_toggle LED_toggle
+/** @addtogroup 435_SDIO_fatfs SDIO_fatfs
   * @{
   */
 
-#define DELAY                            100
-#define FAST                             1
-#define SLOW                             4
-
-uint8_t g_speed = FAST;
-
-void button_exint_init(void);
-void button_isr(void);
+FATFS fs;
+FIL file;
+BYTE work[FF_MAX_SS];
 
 /**
-  * @brief  configure button exint
-  * @param  none
-  * @retval none
+  * test result
   */
-void button_exint_init(void)
+typedef enum
 {
-  exint_init_type exint_init_struct;
+  TEST_FAIL                              = 0,
+  TEST_SUCCESS,
+} test_result_type;
 
-  crm_periph_clock_enable(CRM_SCFG_PERIPH_CLOCK, TRUE);
-  scfg_exint_line_config(SCFG_PORT_SOURCE_GPIOA, SCFG_PINS_SOURCE0);
-
-  exint_default_para_init(&exint_init_struct);
-  exint_init_struct.line_enable = TRUE;
-  exint_init_struct.line_mode = EXINT_LINE_INTERRUPUT;
-  exint_init_struct.line_select = EXINT_LINE_0;
-  exint_init_struct.line_polarity = EXINT_TRIGGER_RISING_EDGE;
-  exint_init(&exint_init_struct);
-
-  nvic_priority_group_config(NVIC_PRIORITY_GROUP_4);
-  nvic_irq_enable(EXINT0_IRQn, 0, 0);
-}
+uint8_t buffer_compare(uint8_t* pbuffer1, uint8_t* pbuffer2, uint16_t buffer_length);
+static void sd_test_error(void);
+static void nvic_configuration(void);
 
 /**
-  * @brief  button handler function
-  * @param  none
-  * @retval none
+  * @brief  compares two buffers.
+  * @param  pbuffer1, pbuffer2: buffers to be compared.
+  * @param  buffer_length: buffer's length
+  * @retval 1: pbuffer1 identical to pbuffer2
+  *         0: pbuffer1 differs from pbuffer2
   */
-void button_isr(void)
+uint8_t buffer_compare(uint8_t* pbuffer1, uint8_t* pbuffer2, uint16_t buffer_length)
 {
-  /* delay 5ms */
-  delay_ms(5);
-
-  /* clear interrupt pending bit */
-  exint_flag_clear(EXINT_LINE_0);
-
-  /* check input pin state */
-  if(SET == gpio_input_data_bit_read(USER_BUTTON_PORT, USER_BUTTON_PIN))
+  while(buffer_length--)
   {
-    if(g_speed == SLOW)
-      g_speed = FAST;
-    else
-      g_speed = SLOW;
+    if(*pbuffer1 != *pbuffer2)
+    {
+      return 0;
+    }
+    pbuffer1++;
+    pbuffer2++;
   }
+  return 1;
 }
 
 /**
-  * @brief  exint0 interrupt handler
+  * @brief  led2 on off every 300ms for sd test error.
   * @param  none
   * @retval none
   */
-void EXINT0_IRQHandler(void)
+static void sd_test_error(void)
 {
-  button_isr();
+  at32_led_on(LED2);
+  delay_ms(300);
+  at32_led_off(LED2);
+  delay_ms(300);
 }
 
+/**
+  * @brief  configures sdio1 irq channel.
+  * @param  none
+  * @retval none
+  */
+static void nvic_configuration(void)
+{
+  nvic_priority_group_config(NVIC_PRIORITY_GROUP_4);
+  nvic_irq_enable(SDIO1_IRQn, 1, 0);
+}
+
+/**
+  * @brief  fatfs file read/write test.
+  * @param  none
+  * @retval TEST_FAIL: fail.
+  *         TEST_SUCCESS: success.
+  */
+static test_result_type fatfs_test(void)
+{
+  FRESULT ret; 
+  char filename[] = "1:/test1.txt";
+  const char wbuf[] = "this is my file for test fatfs!\r\n";
+  char rbuf[50];
+  UINT bytes_written = 0;
+  UINT bytes_read = 0;
+  DWORD fre_clust, fre_sect, tot_sect;
+  FATFS* pt_fs;
+  
+  ret = f_mount(&fs, "1:", 1);
+  
+  if(ret){
+    printf("fs mount err:%d.\r\n", ret);
+    
+    if(ret == FR_NO_FILESYSTEM){
+      printf("create fatfs..\r\n");
+      
+      ret = f_mkfs("1:", 0, work, sizeof(work));
+
+      if(ret){
+        printf("creates fatfs err:%d.\r\n", ret);
+        return TEST_FAIL;
+      }
+      else{
+        printf("creates fatfs ok.\r\n");
+      }
+      
+      ret = f_mount(NULL, "1:", 1);
+      ret = f_mount(&fs, "1:", 1);
+      
+      if(ret){
+        printf("fs mount err:%d.\r\n", ret);
+        return TEST_FAIL;
+      }
+      else{
+        printf("fs mount ok.\r\n");
+      }
+    }
+    else{
+      return TEST_FAIL;
+    }
+  }
+  else{
+    printf("fs mount ok.\r\n");
+  }
+  
+  ret = f_open(&file, filename, FA_READ | FA_WRITE | FA_CREATE_ALWAYS);
+  if(ret){
+    printf("open file err:%d.\r\n", ret);
+  }
+  else{
+    printf("open file ok.\r\n");
+  }
+ 
+  ret = f_write(&file, wbuf, sizeof(wbuf), &bytes_written);
+  if(ret){
+    printf("write file err:%d.\r\n", ret);
+  }
+  else{
+    printf("write file ok, byte:%u.\r\n", bytes_written);
+  }
+  
+  f_lseek(&file, 0);
+  ret = f_read(&file, rbuf, sizeof(rbuf), &bytes_read);
+  if(ret){
+    printf("read file err:%d.\r\n", ret);
+  }
+  else{
+    printf("read file ok, byte:%u.\r\n", bytes_read);
+  }
+  
+  ret = f_close(&file);
+  if(ret){
+    printf("close file err:%d.\r\n", ret);
+  }
+  else{
+    printf("close file ok.\r\n");
+  }
+  
+  pt_fs = &fs;
+  /* get volume information and free clusters of drive 1 */
+  ret = f_getfree("1:", &fre_clust, &pt_fs);
+  if(ret == FR_OK)
+  {
+    /* get total sectors and free sectors */
+    tot_sect = (pt_fs->n_fatent - 2) * pt_fs->csize;
+    fre_sect = fre_clust * pt_fs->csize;
+
+    /* print the free space (assuming 512 bytes/sector) */
+    printf("%10u KiB total drive space.\r\n%10u KiB available.\r\n", tot_sect / 2, fre_sect / 2);
+  }
+  
+  ret = f_mount(NULL, "1:", 1);
+  
+  if(1 == buffer_compare((uint8_t*)rbuf, (uint8_t*)wbuf, sizeof(wbuf))){
+    printf("r/w file data test ok.\r\n");
+  }
+  else{
+    printf("r/w file data test fail.\r\n");
+    return TEST_FAIL;
+  }
+  
+  return TEST_SUCCESS;
+}
+
+/* gloable functions ---------------------------------------------------------*/
 /**
   * @brief  main function.
   * @param  none
@@ -111,25 +226,35 @@ int main(void)
 
   at32_board_init();
 
-  button_exint_init();
-
+  // setting and enable systick timer
   SysTick_Config(1000);
 
+  nvic_configuration();
+  
+  uart_print_init(115200);
+  printf("start test fatfs r0.14b..\r\n");
+  
+  if(TEST_SUCCESS != fatfs_test())
+  {
+    while(1)
+    {
+      sd_test_error();
+    }
+  }
+  
+  /* all tests pass, led3 and led4 fresh */
   while(1)
   {
-    at32_led_toggle(LED2);
-    delay_ms(g_speed * DELAY);
     at32_led_toggle(LED3);
-    delay_ms(g_speed * DELAY);
     at32_led_toggle(LED4);
-    delay_ms(g_speed * DELAY);
+    delay_ms(300);
   }
 }
 
 /**
   * @}
-  */
+  */ 
 
 /**
   * @}
-  */
+  */ 
