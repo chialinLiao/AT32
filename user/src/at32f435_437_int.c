@@ -26,6 +26,7 @@
 
 /* includes ------------------------------------------------------------------*/
 #include "at32f435_437_int.h"
+#include "at32f435_437_board.h"
 
 /** @addtogroup AT32F435_periph_template
   * @{
@@ -130,9 +131,13 @@ void PendSV_Handler(void)
   */
 void SysTick_Handler(void)
 {
-  static uint32_t basetick = 0;
-  
-  basetick++;
+  static uint32_t ticks = 0;
+
+  if(++ticks >= 1)
+  {
+    ticks = 0;
+    at32_led_toggle(LED2);
+  }
 }
 
 /**

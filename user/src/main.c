@@ -35,6 +35,7 @@
   * @{
   */
 
+#define MS_TICK                          (system_core_clock / 1000U)
 #define DELAY                            100
 #define FAST                             1
 #define SLOW                             4
@@ -111,18 +112,17 @@ int main(void)
 
   at32_board_init();
 
-  button_exint_init();
+  /* config systick clock source */
+  systick_clock_source_config(SYSTICK_CLOCK_SOURCE_AHBCLK_NODIV);
 
-  SysTick_Config(1000);
+  /* config systick reload value and enable interrupt */
+  SysTick_Config(MS_TICK);
+
+  button_exint_init();
 
   while(1)
   {
-    at32_led_toggle(LED2);
-    delay_ms(g_speed * DELAY);
-    at32_led_toggle(LED3);
-    delay_ms(g_speed * DELAY);
-    at32_led_toggle(LED4);
-    delay_ms(g_speed * DELAY);
+    
   }
 }
 
