@@ -7,9 +7,12 @@
 /* storage control modules to the FatFs module with a defined API.       */
 /*-----------------------------------------------------------------------*/
 
-#include "ff.h"			/* Obtains integer types */
+#include "ff.h"			  /* Obtains integer types */
 #include "diskio.h"		/* Declarations of disk functions */
 
+#include <string.h>
+#include "at32_spi.h"		/* Example: Header file of existing MMC/SDC contorl module */
+ 
 /* Definitions of physical drive number for each drive */
 #define DEV_RAM		0	/* Example: Map Ramdisk to physical drive 0 */
 #define DEV_MMC		1	/* Example: Map MMC/SD card to physical drive 1 */
@@ -19,9 +22,8 @@
 /*-----------------------------------------------------------------------*/
 /* Get Drive Status                                                      */
 /*-----------------------------------------------------------------------*/
-
 DSTATUS disk_status (
-	BYTE pdrv		/* Physical drive nmuber to identify the drive */
+	BYTE pdrv		/* Physical drive number to identify the drive */
 )
 {
 	DSTATUS stat;
@@ -29,24 +31,18 @@ DSTATUS disk_status (
 
 	switch (pdrv) {
 	case DEV_RAM :
-		result = RAM_disk_status();
-
-		// translate the reslut code here
-
+    result = 1;
+    stat = (DSTATUS)result;
 		return stat;
 
 	case DEV_MMC :
-		result = MMC_disk_status();
-
-		// translate the reslut code here
-
+    result = 0;
+    stat = SD_disk_status();
 		return stat;
 
 	case DEV_USB :
-		result = USB_disk_status();
-
-		// translate the reslut code here
-
+    result = 1;
+    stat = (DSTATUS)result;
 		return stat;
 	}
 	return STA_NOINIT;
@@ -57,7 +53,6 @@ DSTATUS disk_status (
 /*-----------------------------------------------------------------------*/
 /* Inidialize a Drive                                                    */
 /*-----------------------------------------------------------------------*/
-
 DSTATUS disk_initialize (
 	BYTE pdrv				/* Physical drive nmuber to identify the drive */
 )
@@ -67,24 +62,18 @@ DSTATUS disk_initialize (
 
 	switch (pdrv) {
 	case DEV_RAM :
-		result = RAM_disk_initialize();
-
-		// translate the reslut code here
-
+    result = 1;
+    stat = (DSTATUS)result;
 		return stat;
 
 	case DEV_MMC :
-		result = MMC_disk_initialize();
-
-		// translate the reslut code here
-
+    result = SD_disk_initialize();
+    stat = (DSTATUS)result;
 		return stat;
 
 	case DEV_USB :
-		result = USB_disk_initialize();
-
-		// translate the reslut code here
-
+    result = 1;
+    stat = (DSTATUS)result;
 		return stat;
 	}
 	return STA_NOINIT;
@@ -95,7 +84,6 @@ DSTATUS disk_initialize (
 /*-----------------------------------------------------------------------*/
 /* Read Sector(s)                                                        */
 /*-----------------------------------------------------------------------*/
-
 DRESULT disk_read (
 	BYTE pdrv,		/* Physical drive nmuber to identify the drive */
 	BYTE *buff,		/* Data buffer to store read data */
@@ -108,30 +96,18 @@ DRESULT disk_read (
 
 	switch (pdrv) {
 	case DEV_RAM :
-		// translate the arguments here
-
-		result = RAM_disk_read(buff, sector, count);
-
-		// translate the reslut code here
-
+    result = 1;
+    res = (DRESULT)result;
 		return res;
 
 	case DEV_MMC :
-		// translate the arguments here
-
-		result = MMC_disk_read(buff, sector, count);
-
-		// translate the reslut code here
-
+    result = SD_disk_read(buff, sector, count); 
+    res = (DRESULT)result;
 		return res;
 
 	case DEV_USB :
-		// translate the arguments here
-
-		result = USB_disk_read(buff, sector, count);
-
-		// translate the reslut code here
-
+    result = 1;
+    res = (DRESULT)result;
 		return res;
 	}
 
@@ -143,14 +119,13 @@ DRESULT disk_read (
 /*-----------------------------------------------------------------------*/
 /* Write Sector(s)                                                       */
 /*-----------------------------------------------------------------------*/
-
 #if FF_FS_READONLY == 0
 
 DRESULT disk_write (
-	BYTE pdrv,			/* Physical drive nmuber to identify the drive */
+	BYTE pdrv,			  /* Physical drive nmuber to identify the drive */
 	const BYTE *buff,	/* Data to be written */
-	LBA_t sector,		/* Start sector in LBA */
-	UINT count			/* Number of sectors to write */
+	LBA_t sector,		  /* Start sector in LBA */
+	UINT count			  /* Number of sectors to write */
 )
 {
 	DRESULT res;
@@ -158,30 +133,18 @@ DRESULT disk_write (
 
 	switch (pdrv) {
 	case DEV_RAM :
-		// translate the arguments here
-
-		result = RAM_disk_write(buff, sector, count);
-
-		// translate the reslut code here
-
+    result = 1;
+    res = (DRESULT)result;
 		return res;
 
 	case DEV_MMC :
-		// translate the arguments here
-
-		result = MMC_disk_write(buff, sector, count);
-
-		// translate the reslut code here
-
+    result = SD_disk_write(buff, sector, count);
+    res = (DRESULT)result;
 		return res;
 
 	case DEV_USB :
-		// translate the arguments here
-
-		result = USB_disk_write(buff, sector, count);
-
-		// translate the reslut code here
-
+    result = 1;
+    res = (DRESULT)result;
 		return res;
 	}
 
@@ -194,10 +157,9 @@ DRESULT disk_write (
 /*-----------------------------------------------------------------------*/
 /* Miscellaneous Functions                                               */
 /*-----------------------------------------------------------------------*/
-
 DRESULT disk_ioctl (
 	BYTE pdrv,		/* Physical drive nmuber (0..) */
-	BYTE cmd,		/* Control code */
+	BYTE cmd,		  /* Control code */
 	void *buff		/* Buffer to send/receive control data */
 )
 {
@@ -206,24 +168,32 @@ DRESULT disk_ioctl (
 
 	switch (pdrv) {
 	case DEV_RAM :
-
-		// Process of the command for the RAM drive
-
+    result = 1;
+    res = (DRESULT)result;
 		return res;
 
 	case DEV_MMC :
-
-		// Process of the command for the MMC/SD card
-
+    result = SD_disk_ioctl(cmd, buff);
+    res = (DRESULT)result;
 		return res;
 
 	case DEV_USB :
-
-		// Process of the command the USB drive
-
+    result = 1;
+    res = (DRESULT)result;
 		return res;
 	}
 
 	return RES_PARERR;
 }
 
+
+/**
+  * @brief  Gets Time from RTC 
+  * @param  None
+  * @retval Time in DWORD
+  */
+DWORD get_fattime(void)
+{
+
+  return 0; 
+}

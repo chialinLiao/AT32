@@ -26,13 +26,13 @@
 
 /* includes ------------------------------------------------------------------*/
 #include "at32f435_437_int.h"
-#include "at32f435_437_board.h"
+#include "at32_spi.h"
 
-/** @addtogroup AT32F435_periph_template
+/** @addtogroup AT32F435_periph_examples
   * @{
   */
 
-/** @addtogroup 435_LED_toggle
+/** @addtogroup 435_SDIO_fatfs
   * @{
   */
 
@@ -132,18 +132,15 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   static uint32_t ticks = 0;
+  
+  ticks++;
+  spi_ticks++;
+  
+  // for spi sd use
+  if(Timer1 > 0)
+		Timer1--;
 
-  if(++ticks >= 1)
-  {
-    ticks = 0;
-    at32_led_toggle(LED2);
-  }
+	if(Timer2 > 0)
+		Timer2--;
 }
 
-/**
-  * @}
-  */ 
-
-/**
-  * @}
-  */ 

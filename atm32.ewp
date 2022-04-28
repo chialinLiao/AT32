@@ -352,6 +352,7 @@
                     <state>$PROJ_DIR$\libraries\cmsis\cm4\device_support</state>
                     <state>$PROJ_DIR$\user\inc</state>
                     <state>$PROJ_DIR$\bsp</state>
+                    <state>$PROJ_DIR$\middlewares\3rd_party\fatfs\source</state>
                 </option>
                 <option>
                     <name>CCStdIncCheck</name>
@@ -2220,7 +2221,28 @@
         </file>
     </group>
     <group>
+        <name>middlewares</name>
+        <group>
+            <name>fatfs</name>
+            <file>
+                <name>$PROJ_DIR$\middlewares\3rd_party\fatfs\source\diskio.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\middlewares\3rd_party\fatfs\source\ff.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\middlewares\3rd_party\fatfs\source\ffsystem.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\middlewares\3rd_party\fatfs\source\ffunicode.c</name>
+            </file>
+        </group>
+    </group>
+    <group>
         <name>user</name>
+        <file>
+            <name>$PROJ_DIR$\user\src\at32_spi.c</name>
+        </file>
         <file>
             <name>$PROJ_DIR$\user\src\at32f435_437_clock.c</name>
         </file>

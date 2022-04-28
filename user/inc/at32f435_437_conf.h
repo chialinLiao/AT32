@@ -32,15 +32,6 @@
 extern "C" {
 #endif
  
-
-/** @addtogroup AT32F435_periph_template
-  * @{
-  */
-
-/** @addtogroup 435_Library_configuration Library_configuration
-  * @{
-  */
-  
 /**
   * @brief in the following line adjust the value of high speed exernal crystal (hext)
   * used in your application
@@ -175,14 +166,6 @@ extern "C" {
 #ifdef USB_MODULE_ENABLED
 #include "at32f435_437_usb.h"
 #endif
-
-/**
-  * @}
-  */
-
-  /**
-  * @}
-  */
   
 #ifdef __cplusplus
 }
