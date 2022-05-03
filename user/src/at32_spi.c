@@ -31,6 +31,11 @@
 /**========================================================================
  *                           typedef
  *========================================================================**/
+typedef enum
+{
+  SPI_SLow = 0,
+  SPI_Fast,
+} spiSpeed_type;
 
 /**========================================================================
  *                           variables
@@ -48,13 +53,12 @@ spi_init_type spi_init_struct;
 gpio_type *cs_gpio_port = SD_CS_PORT;
 uint16_t cs_gpio_pin = SD_CS_PIN;
 
-uint16_t spi_ticks;
+volatile uint16_t spi_ticks;
 
 /**========================================================================
  *                           funtions
  *========================================================================**/
-static void SPI_Delay(uint16_t ms);
-static void SELECT(void);
+static uint8_t SELECT(void);
 static void DESELECT(void);
 static void SPI_TxByte(uint8_t data);
 static void SPI_TxBuffer(uint8_t *buffer, uint16_t len);
@@ -78,7 +82,7 @@ static BYTE SD_SendCmd(BYTE cmd, uint32_t arg);
  * @param  none
  * @retval none
  */
-void SPI_Config(void)
+void SPI_Config(uint8_t mode)
 {
   spi_enable(SPI3, FALSE);
 
@@ -87,12 +91,23 @@ void SPI_Config(void)
   spi_default_para_init(&spi_init_struct);
   spi_init_struct.transmission_mode = SPI_TRANSMIT_FULL_DUPLEX;
   spi_init_struct.master_slave_mode = SPI_MODE_MASTER;
-  spi_init_struct.mclk_freq_division = SPI_MCLK_DIV_32;
   spi_init_struct.first_bit_transmission = SPI_FIRST_BIT_MSB;
   spi_init_struct.frame_bit_num = SPI_FRAME_8BIT;
   spi_init_struct.clock_polarity = SPI_CLOCK_POLARITY_LOW;
   spi_init_struct.clock_phase = SPI_CLOCK_PHASE_1EDGE;
   spi_init_struct.cs_mode_selection = SPI_CS_SOFTWARE_MODE;
+  
+  if(mode == 0)
+  {
+    // slow mode for init 144 / 512 = 281.25Khz
+    spi_init_struct.mclk_freq_division = SPI_MCLK_DIV_512;
+  }
+  else
+  {
+    // fast mode for operation, 144/32 = 4.5Mhz
+    spi_init_struct.mclk_freq_division = SPI_MCLK_DIV_32;
+  }
+
   spi_init(SPI3, &spi_init_struct);
 
   spi_enable(SPI3, TRUE);
@@ -118,6 +133,7 @@ void SPI_GPIO_Config(void)
   gpio_initstructure.gpio_mode = GPIO_MODE_OUTPUT;
   gpio_initstructure.gpio_pins = GPIO_PINS_4;
   gpio_init(GPIOA, &gpio_initstructure);
+  cs_gpio_port->scr = cs_gpio_pin;
 
   /* spi3 sck pin */
   gpio_initstructure.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
@@ -141,24 +157,26 @@ void SPI_GPIO_Config(void)
   gpio_pin_mux_config(GPIOC, GPIO_PINS_SOURCE12, GPIO_MUX_6);
 }
 
-/**
- * @brief
- * @param ms
- */
-static void SPI_Delay(uint16_t ms)
-{
-  spi_ticks = 0;
-
-  while (spi_ticks <= ms);
-}
 
 /**
  * @brief slave select
  */
-static void SELECT(void)
+static uint8_t SELECT(void)
 {
+  // delay a while
+  for(uint8_t i=0; i<100; i++);
+  
   cs_gpio_port->clr = cs_gpio_pin;
-  SPI_Delay(1);
+
+  SPI_TxByte(0xFF);		/* Dummy clock (force DO enabled) */
+
+  if (SD_ReadyWait() != 0xFF)
+  {
+    DESELECT();
+    return FALSE; /* Timeout */
+  }
+
+  return TRUE;	
 }
 
 /**
@@ -166,8 +184,12 @@ static void SELECT(void)
  */
 static void DESELECT(void)
 {
+  // delay a while
+  for(uint8_t i=0; i<100; i++);
+
   cs_gpio_port->scr = cs_gpio_pin;
-  SPI_Delay(1);
+
+  SPI_TxByte(0xFF);		/* Dummy clock (force DO hi-z for multiple slave SPI) */
 }
 
 /**
@@ -179,6 +201,9 @@ static void SPI_TxByte(uint8_t data)
   // check tx buf is empty
   while (spi_i2s_flag_get(SD_SPIx, SPI_I2S_TDBE_FLAG) == RESET);
   spi_i2s_data_transmit(SD_SPIx, data);
+
+  //* check rx buf is full
+  while (spi_i2s_flag_get(SD_SPIx, SPI_I2S_RDBF_FLAG) == RESET);
 }
 
 /**
@@ -256,39 +281,12 @@ static uint8_t SD_ReadyWait(void)
  */
 static void SD_PowerOn(void)
 {
-  uint8_t args[6];
-  uint32_t cnt = 0x1FFF;
-
   /* transmit bytes to wake up */
   DESELECT();
   for (int i = 0; i < 10; i++)
   {
     SPI_TxByte(0xFF);
   }
-
-  /* slave select */
-  SELECT();
-
-  /* make idle state */
-  args[0] = CMD0; /* CMD0:GO_IDLE_STATE */
-  args[1] = 0;
-  args[2] = 0;
-  args[3] = 0;
-  args[4] = 0;
-  args[5] = 0x95; /* CRC */
-
-  SPI_TxBuffer(args, sizeof(args));
-
-  /* wait response */
-  while ((SPI_RxByte() != 0x01) && cnt)
-  {
-    cnt--;
-  }
-
-  DESELECT();
-  SPI_TxByte(0XFF);
-
-  PowerFlag = 1;
 }
 
 /* power off */
@@ -380,19 +378,14 @@ static bool SD_TxDataBlock(const uint8_t *buff, BYTE token)
 
       /* transmit 0x05 accepted */
       if ((resp & 0x1F) == 0x05)
-        break;
+        return TRUE;
       i++;
     }
 
-    /* recv buffer clear */
-    while (SPI_RxByte() == 0);
+    return FALSE;
   }
 
-  /* transmit 0x05 accepted */
-  if ((resp & 0x1F) == 0x05)
-    return TRUE;
-
-  return FALSE;
+  return TRUE; 
 }
 
 /**
@@ -404,13 +397,24 @@ static bool SD_TxDataBlock(const uint8_t *buff, BYTE token)
 static BYTE SD_SendCmd(BYTE cmd, uint32_t arg)
 {
   uint8_t crc, res;
+  
+  /* ACMD<n> is the command sequense of CMD55-CMD<n> */
+	if (cmd & 0x80) 
+  {	
+		cmd &= 0x7F;
+		res = SD_SendCmd(CMD55, 0);
+		if (res > 1) return res;
+  }
 
-  /* wait SD ready */
-  if (SD_ReadyWait() != 0xFF)
-    return 0xFF;
+	/* Select the card and wait for ready except to stop multiple block read */
+	if (cmd != CMD12) 
+  {
+	  DESELECT();
+		if (!SELECT()) return 0xFF;
+	}
 
   /* transmit command */
-  SPI_TxByte(cmd);                  /* Command */
+  SPI_TxByte(0x40 | cmd);           /* Command */
   SPI_TxByte((uint8_t)(arg >> 24)); /* Argument[31..24] */
   SPI_TxByte((uint8_t)(arg >> 16)); /* Argument[23..16] */
   SPI_TxByte((uint8_t)(arg >> 8));  /* Argument[15..8] */
@@ -451,17 +455,17 @@ static BYTE SD_SendCmd(BYTE cmd, uint32_t arg)
  */
 DSTATUS SD_disk_initialize(void)
 {
-  uint8_t n, type, ocr[4];
+  uint8_t n, cmd, type, ocr[4];
 
   /* no disk */
   if (Stat & STA_NODISK)
     return Stat;
 
+  spi_i2s_reset(SD_SPIx);
+  SPI_Config(SPI_SLow);
+
   /* power on */
   SD_PowerOn();
-
-  /* slave select */
-  SELECT();
 
   /* check disk type */
   type = 0;
@@ -484,12 +488,8 @@ DSTATUS SD_disk_initialize(void)
       /* voltage range 2.7-3.6V */
       if (ocr[2] == 0x01 && ocr[3] == 0xAA)
       {
-        /* ACMD41 with HCS bit */
-        do
-        {
-          if (SD_SendCmd(CMD55, 0) <= 1 && SD_SendCmd(CMD41, 1UL << 30) == 0)
-            break;
-        } while (Timer1);
+        /* Wait for leaving idle state (ACMD41 with HCS bit) */
+        while (Timer1 && SD_SendCmd(ACMD41, 0x40000000));	
 
         /* READ_OCR */
         if (Timer1 && SD_SendCmd(CMD58, 0) == 0)
@@ -501,46 +501,41 @@ DSTATUS SD_disk_initialize(void)
           }
 
           /* SDv2 (HC or SC) */
-          type = (ocr[0] & 0x40) ? CT_SD2 | CT_BLOCK : CT_SD2;
+          type = (ocr[0] & 0x40) ? CT_SD2|CT_BLOCK : CT_SD2;
         }
       }
     }
     else
     {
-      /* SDC V1 or MMC */
-      type = (SD_SendCmd(CMD55, 0) <= 1 && SD_SendCmd(CMD41, 0) <= 1) ? CT_SD1 : CT_MMC;
-
-      do
+    	/* SDv1 or MMCv3 */
+			if (SD_SendCmd(ACMD41, 0) <= 1) 	
       {
-        if (type == CT_SD1)
-        {
-          if (SD_SendCmd(CMD55, 0) <= 1 && SD_SendCmd(CMD41, 0) == 0)
-            break; /* ACMD41 */
-        }
-        else
-        {
-          if (SD_SendCmd(CMD1, 0) == 0)
-            break; /* CMD1 */
-        }
-
-      } while (Timer1);
-
-      /* SET_BLOCKLEN */
-      if (!Timer1 || SD_SendCmd(CMD16, 512) != 0)
-        type = 0;
+				type = CT_SD1; 
+        cmd = ACMD41;	/* SDv1 */
+			} 
+      else 
+      {
+				type = CT_MMC; 
+        cmd = CMD1;	/* MMCv3 */
+			}
+			
+      while (Timer1 && SD_SendCmd(cmd, 0));		/* Wait for leaving idle state */
+			
+      if (!Timer1 || SD_SendCmd(CMD16, 512) != 0) /* Set read/write block length to 512 */
+        type = 0;	
     }
   }
 
   CardType = type;
-
-  /* Idle */
   DESELECT();
-  SPI_RxByte();
 
   /* Clear STA_NOINIT */
   if (type)
   {
     Stat &= ~STA_NOINIT;
+
+    spi_i2s_reset(SD_SPIx);
+    SPI_Config(SPI_Fast);
   }
   else
   {
@@ -575,10 +570,8 @@ DRESULT SD_disk_read(BYTE *buff, DWORD sector, UINT count)
     return RES_NOTRDY;
 
   /* convert to byte address */
-  if (!(CardType & CT_SD2))
+  if (!(CardType & CT_BLOCK))
     sector *= 512;
-
-  SELECT();
 
   if (count == 1)
   {
@@ -603,9 +596,7 @@ DRESULT SD_disk_read(BYTE *buff, DWORD sector, UINT count)
     }
   }
 
-  /* Idle */
   DESELECT();
-  SPI_RxByte();
 
   return count ? RES_ERROR : RES_OK;
 }
@@ -629,10 +620,8 @@ DRESULT SD_disk_write(const BYTE *buff, DWORD sector, UINT count)
     return RES_WRPRT;
 
   /* convert to byte address */
-  if (!(CardType & CT_SD2))
+  if (!(CardType & CT_BLOCK))
     sector *= 512;
-
-  SELECT();
 
   if (count == 1)
   {
@@ -643,9 +632,8 @@ DRESULT SD_disk_write(const BYTE *buff, DWORD sector, UINT count)
   else
   {
     /* WRITE_MULTIPLE_BLOCK */
-    if (CardType & CT_SD1)
+    if (CardType & CT_SDC)
     {
-      SD_SendCmd(CMD55, 0);
       SD_SendCmd(CMD23, count); /* ACMD23 */
     }
 
@@ -666,9 +654,7 @@ DRESULT SD_disk_write(const BYTE *buff, DWORD sector, UINT count)
     }
   }
 
-  /* Idle */
   DESELECT();
-  SPI_RxByte();
 
   return count ? RES_ERROR : RES_OK;
 }
@@ -709,24 +695,21 @@ DRESULT SD_disk_ioctl(BYTE ctrl, void *buff)
       break;
     }
   }
-  else
+  else 
   {
     /* no disk */
     if (Stat & STA_NOINIT)
       return RES_NOTRDY;
 
-    SELECT();
-
     switch (ctrl)
     {
-    case GET_SECTOR_COUNT:
-      /* SEND_CSD */
+    case GET_SECTOR_COUNT: /* Get number of sectors on the disk (WORD) */
       if ((SD_SendCmd(CMD9, 0) == 0) && SD_RxDataBlock(csd, 16))
       {
         if ((csd[0] >> 6) == 1)
         {
           /* SDC V2 */
-          csize = csd[9] + ((WORD)csd[8] << 8) + 1;
+          csize = csd[9] + ((WORD)csd[8] << 8) + ((DWORD)(csd[7] & 63) << 16) + 1;
           *(DWORD *)buff = (DWORD)csize << 10;
         }
         else
@@ -745,9 +728,14 @@ DRESULT SD_disk_ioctl(BYTE ctrl, void *buff)
       res = RES_OK;
       break;
 
-    case CTRL_SYNC:
-      if (SD_ReadyWait() == 0xFF)
+    case CTRL_SYNC :    	/* Flush write-back cache, Wait for end of internal process */
+      if (SELECT()) 
         res = RES_OK;
+      break;
+
+    case MMC_GET_TYPE :		/* Get card type flags (1 byte) */
+      *ptr = CardType;
+      res = RES_OK;
       break;
 
     case MMC_GET_CSD:
@@ -780,7 +768,6 @@ DRESULT SD_disk_ioctl(BYTE ctrl, void *buff)
     }
 
     DESELECT();
-    SPI_RxByte();
   }
 
   return res;

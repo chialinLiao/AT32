@@ -180,9 +180,6 @@ static test_result_type fatfs_test(void)
   {
     printf("write file ok, byte:%u.\r\n", bytes_written);
   }
-
-  f_puts("balabala \r\n", &file);
-  f_puts("kikikoko \r\n", &file);
   
   f_lseek(&file, 0);
   ret = f_read(&file, rbuf, sizeof(rbuf), &bytes_read);
@@ -253,7 +250,7 @@ int main(void)
 
   SPI_GPIO_Config();
 
-  SPI_Config();
+  //SPI_Config(0);
 
   uart_print_init(115200);
   printf("start test fatfs r0.14b..\r\n");
