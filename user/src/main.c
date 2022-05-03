@@ -55,6 +55,9 @@ FATFS fs;
 FIL file;
 BYTE work[FF_MAX_SS];
 
+char wbuf[512] = {0};
+char rbuf[512] = {0};
+
 uint8_t buffer_compare(uint8_t* pbuffer1, uint8_t* pbuffer2, uint16_t buffer_length);
 static void sd_test_error(void);
 static void nvic_configuration(void);
@@ -113,8 +116,6 @@ static test_result_type fatfs_test(void)
 {
   FRESULT ret; 
   char filename[] = "1:/test1.txt";
-  const char wbuf[] = "this is my file for test fatfs!\r\n";
-  char rbuf[50];
   UINT bytes_written = 0;
   UINT bytes_read = 0;
   DWORD fre_clust, fre_sect, tot_sect;
@@ -161,45 +162,60 @@ static test_result_type fatfs_test(void)
     printf("fs mount ok.\r\n");
   }
   
-  ret = f_open(&file, filename, FA_READ | FA_WRITE | FA_CREATE_ALWAYS);
-  if(ret)
+  for(uint16_t x=0; x<128; x++)
   {
-    printf("open file err:%d.\r\n", ret);
-  }
-  else
-  {
-    printf("open file ok.\r\n");
-  }
+    // ascii 0~9
+    uint8_t ch = 0x30 + x % 10;
+    
+    memset(wbuf, ch, sizeof(wbuf) - 3);
+    wbuf[sizeof(wbuf) - 2] = '\r';
+    wbuf[sizeof(wbuf) - 1] = '\n';    
+
+    ret = f_open(&file, filename, FA_WRITE | FA_OPEN_ALWAYS | FA_OPEN_APPEND);
+    if(ret)
+      printf("w_open file err:%d.\r\n", ret);
+    else
+      printf("w_open file ok.\r\n");
   
-  ret = f_write(&file, wbuf, sizeof(wbuf), &bytes_written);
-  if(ret)
-  {
-    printf("write file err:%d.\r\n", ret);
-  }
-  else
-  {
-    printf("write file ok, byte:%u.\r\n", bytes_written);
-  }
+    ret = f_write(&file, wbuf, sizeof(wbuf), &bytes_written);
+    if(ret)
+      printf("count = %d, => write file err:%d.\r\n", x, ret);
+    else
+      printf("count = %d, write file ok, byte:%u.\r\n", x, bytes_written);
+
+
+    ret = f_close(&file);
+    if(ret)
+      printf("w_close file err:%d.\r\n", ret);
+    else
+      printf("w_close file ok.\r\n");
   
-  f_lseek(&file, 0);
-  ret = f_read(&file, rbuf, sizeof(rbuf), &bytes_read);
-  if(ret)
-  {
-    printf("read file err:%d.\r\n", ret);
-  }
-  else
-  {
-    printf("read file ok, byte:%u.\r\n", bytes_read);
-  }
+
+    ret = f_open(&file, filename, FA_READ | FA_OPEN_ALWAYS);
+    if(ret)
+      printf("r_open file err:%d.\r\n", ret);
+    else
+      printf("r_open file ok.\r\n");
   
-  ret = f_close(&file);
-  if(ret)
-  {
-    printf("close file err:%d.\r\n", ret);
-  }
-  else
-  {
-    printf("close file ok.\r\n");
+    
+    f_lseek(&file, x * sizeof(wbuf));
+    
+    ret = f_read(&file, rbuf, sizeof(rbuf), &bytes_read);
+    if(ret)
+      printf("read file err:%d.\r\n", ret);
+    else
+      printf("read file ok, byte:%u.\r\n", bytes_read);
+  
+    ret = f_close(&file);
+    if(ret)
+      printf("r_close file err:%d.\r\n", ret);
+    else
+      printf("r_close file ok.\r\n");
+
+    if(1 == buffer_compare((uint8_t*)rbuf, (uint8_t*)wbuf, sizeof(wbuf)))
+      printf("r/w file data test ok.\r\n");
+    else
+      printf("r/w file data test fail.\r\n");
   }
   
   pt_fs = &fs;
@@ -216,14 +232,6 @@ static test_result_type fatfs_test(void)
   }
   
   ret = f_mount(NULL, "1:", 1);
-  
-  if(1 == buffer_compare((uint8_t*)rbuf, (uint8_t*)wbuf, sizeof(wbuf))){
-    printf("r/w file data test ok.\r\n");
-  }
-  else{
-    printf("r/w file data test fail.\r\n");
-    return TEST_FAIL;
-  }
   
   return TEST_SUCCESS;
 }

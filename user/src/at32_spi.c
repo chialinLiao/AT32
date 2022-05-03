@@ -462,7 +462,7 @@ DSTATUS SD_disk_initialize(void)
     return Stat;
 
   spi_i2s_reset(SD_SPIx);
-  SPI_Config(SPI_SLow);
+  SPI_Config(SPI_Fast);
 
   /* power on */
   SD_PowerOn();
@@ -534,8 +534,8 @@ DSTATUS SD_disk_initialize(void)
   {
     Stat &= ~STA_NOINIT;
 
-    spi_i2s_reset(SD_SPIx);
-    SPI_Config(SPI_Fast);
+    //spi_i2s_reset(SD_SPIx);
+    //SPI_Config(SPI_Fast);
   }
   else
   {
