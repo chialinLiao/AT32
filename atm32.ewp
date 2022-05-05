@@ -352,6 +352,8 @@
                     <state>$PROJ_DIR$\libraries\cmsis\cm4\device_support</state>
                     <state>$PROJ_DIR$\user\inc</state>
                     <state>$PROJ_DIR$\bsp</state>
+                    <state>$PROJ_DIR$\middlewares\usb_drivers\inc</state>
+                    <state>$PROJ_DIR$\middlewares\usbd_class\cdc</state>
                 </option>
                 <option>
                     <name>CCStdIncCheck</name>
@@ -2217,6 +2219,30 @@
         </file>
         <file>
             <name>$PROJ_DIR$\libraries\drivers\src\at32f435_437_xmc.c</name>
+        </file>
+    </group>
+    <group>
+        <name>usbd_class</name>
+        <file>
+            <name>$PROJ_DIR$\middlewares\usbd_class\cdc\cdc_class.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\middlewares\usbd_class\cdc\cdc_desc.c</name>
+        </file>
+    </group>
+    <group>
+        <name>usbd_driver</name>
+        <file>
+            <name>$PROJ_DIR$\middlewares\usb_drivers\src\usb_core.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\middlewares\usb_drivers\src\usbd_core.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\middlewares\usb_drivers\src\usbd_int.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\middlewares\usb_drivers\src\usbd_sdr.c</name>
         </file>
     </group>
     <group>
