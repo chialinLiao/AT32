@@ -29,17 +29,18 @@
 #include "usb_conf.h"
 #include "usb_core.h"
 #include "usbd_int.h"
-#include "printer_class.h"
-#include "printer_desc.h"
+#include "msc_class.h"
+#include "msc_desc.h"
+
+
 
 /** @addtogroup AT32F435_periph_examples
   * @{
   */
 
-/** @addtogroup 435_USB_device_printer USB_device_printer
+/** @addtogroup 435_USB_device_msc USB_device_msc
   * @{
   */
-
 
 /* usb global struct define */
 otg_core_type otg_core_struct;
@@ -80,15 +81,12 @@ int main(void)
   usbd_init(&otg_core_struct,
             USB_FULL_SPEED_CORE_ID,
             USB_ID,
-            &class_handler,
-            &desc_handler);
+            &msc_class_handler,
+            &msc_desc_handler);
 
   while(1)
   {
-    /* get usb vcp receive data */
-    /* usb_printer_get_rxdata(&otg_core_struct.dev, usb_buffer); */
 
-    /* user code ...*/
   }
 }
 
