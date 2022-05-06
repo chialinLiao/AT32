@@ -29,20 +29,20 @@
 #include "usb_conf.h"
 #include "usb_core.h"
 #include "usbd_int.h"
-#include "cdc_class.h"
-#include "cdc_desc.h"
+#include "printer_class.h"
+#include "printer_desc.h"
 
 /** @addtogroup AT32F435_periph_examples
   * @{
   */
 
-/** @addtogroup 435_USB_device_vcp_loopback USB_device_vcp_loopback
+/** @addtogroup 435_USB_device_printer USB_device_printer
   * @{
   */
 
+
 /* usb global struct define */
 otg_core_type otg_core_struct;
-uint8_t usb_buffer[256];
 void usb_clock48m_select(usb_clk48_s clk_s);
 void usb_gpio_config(void);
 void usb_low_power_wakeup_config(void);
@@ -54,12 +54,6 @@ void usb_low_power_wakeup_config(void);
   */
 int main(void)
 {
-  uint16_t data_len;
-
-  uint32_t timeout;
-
-  uint8_t send_zero_packet = 0;
-
   nvic_priority_group_config(NVIC_PRIORITY_GROUP_4);
 
   system_clock_config();
@@ -88,34 +82,13 @@ int main(void)
             USB_ID,
             &class_handler,
             &desc_handler);
+
   while(1)
   {
     /* get usb vcp receive data */
-    data_len = usb_vcp_get_rxdata(&otg_core_struct.dev, usb_buffer);
+    /* usb_printer_get_rxdata(&otg_core_struct.dev, usb_buffer); */
 
-    if(data_len > 0 || send_zero_packet == 1)
-    {
-
-      /* bulk transfer is complete when the endpoint does one of the following
-         1 has transferred exactly the amount of data expected
-         2 transfers a packet with a payload size less than wMaxPacketSize or transfers a zero-length packet
-      */
-      if(data_len > 0)
-        send_zero_packet = 1;
-
-      if(data_len == 0)
-        send_zero_packet = 0;
-
-      timeout = 50000;
-      do
-      {
-        /* send data to host */
-        if(usb_vcp_send_data(&otg_core_struct.dev, usb_buffer, data_len) == SUCCESS)
-        {
-          break;
-        }
-      }while(timeout --);
-    }
+    /* user code ...*/
   }
 }
 

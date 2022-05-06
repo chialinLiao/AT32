@@ -353,7 +353,7 @@
                     <state>$PROJ_DIR$\user\inc</state>
                     <state>$PROJ_DIR$\bsp</state>
                     <state>$PROJ_DIR$\middlewares\usb_drivers\inc</state>
-                    <state>$PROJ_DIR$\middlewares\usbd_class\cdc</state>
+                    <state>$PROJ_DIR$\middlewares\usbd_class\printer</state>
                 </option>
                 <option>
                     <name>CCStdIncCheck</name>
@@ -2224,10 +2224,10 @@
     <group>
         <name>usbd_class</name>
         <file>
-            <name>$PROJ_DIR$\middlewares\usbd_class\cdc\cdc_class.c</name>
+            <name>$PROJ_DIR$\middlewares\usbd_class\printer\printer_class.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\middlewares\usbd_class\cdc\cdc_desc.c</name>
+            <name>$PROJ_DIR$\middlewares\usbd_class\printer\printer_desc.c</name>
         </file>
     </group>
     <group>
