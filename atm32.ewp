@@ -2230,5 +2230,11 @@
         <file>
             <name>$PROJ_DIR$\user\src\main.c</name>
         </file>
+        <file>
+            <name>$PROJ_DIR$\user\src\touch.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\user\src\xmc_lcd.c</name>
+        </file>
     </group>
 </project>

@@ -35,6 +35,8 @@
   * @{
   */
 
+uint32_t systick = 0;
+
 /**
   * @brief  this function handles nmi exception.
   * @param  none
@@ -130,9 +132,8 @@ void PendSV_Handler(void)
   */
 void SysTick_Handler(void)
 {
-  static uint32_t basetick = 0;
-  
-  basetick++;
+
+  systick++;
 }
 
 /**
