@@ -396,7 +396,7 @@ void lcd_setblock(uint16_t xstart, uint16_t ystart, uint16_t xend, uint16_t yend
   */
 void lcd_writeonepoint(uint16_t color)
 {
-  lcd_wr_data(color);
+  //lcd_wr_data(color);
 }
 
 /**
@@ -422,16 +422,10 @@ void lcd_clear(uint16_t color)
   
   lcd_struct->lcd_setblock(0, 0, 240, 320);
   
-  for(i = 0; i < 76800 / 8; i++)
+  for(i = 0; i < 76800; i++)
   {
-    lcd_writeonepoint(color);
-    lcd_writeonepoint(color);   
-    lcd_writeonepoint(color);   
-    lcd_writeonepoint(color);   
-    lcd_writeonepoint(color);   
-    lcd_writeonepoint(color);   
-    lcd_writeonepoint(color);   
-    lcd_writeonepoint(color);       
+    //lcd_writeonepoint(color);
+    lcd_wr_data(color);
   }
 }
 

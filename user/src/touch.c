@@ -234,7 +234,7 @@ void touch_scan(void)
 {
   uint16_t x, y; 
   
-  if(gpio_input_data_bit_read(GPIOB, GPIO_PINS_11) == 0)
+  if(touch_detect())
   {
     touch_dev_struct.touch_read_xy(&touch_dev_struct.x_p[1], &touch_dev_struct.y_p[1]); 
     x = (240 * touch_dev_struct.x_p[1]) / (0xed0); 
@@ -257,6 +257,20 @@ error_status touch_adjust(void)
 {
   /* touch adjust code */
   return SUCCESS; 
+}
+
+
+/**
+  * @brief  this function is read data from touch.
+  * @param  none
+  * @retval 1: touched, 0: untouched 
+  */
+uint8_t touch_detect(void)
+{ 
+  if(gpio_input_data_bit_read(GPIOB, GPIO_PINS_11) == 0)
+    return 1;
+
+  return 0;   
 }
 
 /**

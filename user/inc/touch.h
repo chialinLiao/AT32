@@ -85,6 +85,7 @@ uint16_t touch_read_ad(uint8_t xy);
 void touch_write_1byte(uint8_t cmd);
 uint8_t touch_read_1byte(void);
 error_status touch_adjust(void); 
+uint8_t touch_detect(void);
 
 /**
   * @}
