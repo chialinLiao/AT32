@@ -2220,6 +2220,15 @@
         </file>
     </group>
     <group>
+        <name>hardware</name>
+        <file>
+            <name>$PROJ_DIR$\user\src\touch.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\user\src\xmc_lcd.c</name>
+        </file>
+    </group>
+    <group>
         <name>user</name>
         <file>
             <name>$PROJ_DIR$\user\src\at32f435_437_clock.c</name>
@@ -2229,12 +2238,6 @@
         </file>
         <file>
             <name>$PROJ_DIR$\user\src\main.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\user\src\touch.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\user\src\xmc_lcd.c</name>
         </file>
     </group>
 </project>

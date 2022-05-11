@@ -37,13 +37,22 @@
   * @{
   */
 
- #define MS_TICK    (system_core_clock / 1000U)
-  
+/** typdef 
+*/
+
+/** define 
+*/
+
+/** macro 
+*/
+
+/** variables 
+*/
 uint16_t point_color;
 uint16_t point_index = 0;
 
 uint16_t color_arr[] = {
-  //WHITE,
+  WHITE,
   BLACK,                               
   BLUE,                              
   BRED,                            
@@ -59,7 +68,11 @@ uint16_t color_arr[] = {
   GRAY 
 };
 
-extern uint32_t systick;
+/** functions 
+*/
+void trm3_int_init(u16 arr, u16 psc);  
+
+
 
 /**
   * @brief  main function.
@@ -73,7 +86,6 @@ int main(void)
   system_clock_config();
   at32_board_init();
 
-
   lcd_struct->lcd_init();
   point_color = GBLUE;
   lcd_struct->lcd_clear(point_color);
@@ -81,12 +93,12 @@ int main(void)
   touch_struct->init();
   touch_struct->touch_read_xy(&touch_struct->x_p[0], &touch_struct->y_p[0]);
 
-  /* config systick reload value and enable interrupt */
-  //SysTick_Config(MS_TICK);
+  /* for lvgl tick timer */
+  trm3_int_init(288-1, 1000-1);
 
   while(1)
   {
-    static uint8_t testNo = 0;
+    static uint8_t testNo = 1;
 
     if(testNo == 0)
     {
@@ -109,6 +121,33 @@ int main(void)
     }
   }
 }
+
+void trm3_int_init(u16 arr, u16 psc)
+{
+
+/* enable tmr1 clock */
+  crm_periph_clock_enable(CRM_TMR3_PERIPH_CLOCK, TRUE);
+
+  tmr_base_init(TMR3, arr, psc);
+  tmr_cnt_dir_set(TMR3, TMR_COUNT_UP);
+  tmr_interrupt_enable(TMR3, TMR_OVF_INT, TRUE);
+
+  /* tmr1 overflow interrupt nvic init */
+  nvic_priority_group_config(NVIC_PRIORITY_GROUP_0);
+  nvic_irq_enable(TMR3_GLOBAL_IRQn, 1, 0);
+
+  /* enable tmr3 */
+  tmr_counter_enable(TMR3, TRUE);  
+}
+ 
+void TMR3_GLOBAL_IRQHandler(void)
+{ 		  
+  TMR3->ists = 0;;
+  //lv_tick_inc(1);	    
+
+  at32_led_toggle(LED2); 
+}
+
 
 /**
   * @}
