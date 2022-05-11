@@ -77,10 +77,10 @@ static void disp_init(void)
     dma_init_struct.buffer_size             = 65535;
     dma_init_struct.direction               = DMA_DIR_MEMORY_TO_MEMORY;
     dma_init_struct.memory_base_addr        = (uint32_t)XMC_LCD_DATA; /* as  destination address */
-    dma_init_struct.memory_data_width       = DMA_MEMORY_DATA_WIDTH_WORD;
+    dma_init_struct.memory_data_width       = DMA_PERIPHERAL_DATA_WIDTH_HALFWORD;
     dma_init_struct.memory_inc_enable       = FALSE;
     dma_init_struct.peripheral_base_addr    = (uint32_t)XMC_LCD_DATA; /* as  source address */
-    dma_init_struct.peripheral_data_width   = DMA_PERIPHERAL_DATA_WIDTH_WORD;
+    dma_init_struct.peripheral_data_width   = DMA_PERIPHERAL_DATA_WIDTH_HALFWORD;
     dma_init_struct.peripheral_inc_enable   = TRUE;
     dma_init_struct.priority                = DMA_PRIORITY_MEDIUM;
     dma_init_struct.loop_mode_enable        = FALSE;
@@ -130,14 +130,23 @@ static void disp_flush(lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_colo
     uint32_t size = (area->x2 - area->x1 + 1) * (area->y2 - area->y1 + 1);
 	lcd_setblock(area->x1, area->y1, area->x2, area->y2);
 
-    DMA1_CHANNEL1->ctrl    &= ~(uint16_t)1;
-    DMA1_CHANNEL1->paddr  = (uint32_t)color_p;
-    DMA1_CHANNEL1->dtcnt = size / 2;
-    DMA1_CHANNEL1->ctrl    |= (uint16_t)1;
+    // DMA1_CHANNEL1->ctrl    &= ~(uint16_t)1;
+    // DMA1_CHANNEL1->paddr  = (uint32_t)color_p;
+    // DMA1_CHANNEL1->dtcnt = size / 2;
+    // DMA1_CHANNEL1->ctrl    |= (uint16_t)1;
+
+    //! now, lcd with dma transition can not work normally,
+    //! so use the polling method to do it to verify lvgl porting is ok or not.
+    for(uint32_t i=0; i<size; i++)
+    {
+        uint16_t color = color_p->full;
+        color_p++;
+        lcd_writeonepoint(color);
+    }
+    lv_disp_flush_ready(disp_drv);
 
     /* IMPORTANT!!!
     * Inform the graphics library that you are ready with the flushing*/
-    // lv_disp_flush_ready(disp_drv);
 }
 
 /*OPTIONAL: GPU INTERFACE*/

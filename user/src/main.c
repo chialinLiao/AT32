@@ -75,15 +75,14 @@ int main(void)
   system_clock_config();
   at32_board_init();
 
+  uart_print_init(115200);
+
   lcd_struct->lcd_init();
   point_color = GBLUE;
   lcd_struct->lcd_clear(point_color);
   
   touch_struct->init();
-  //touch_struct->touch_read_xy(&touch_struct->x_p[0], &touch_struct->y_p[0]);
-
-  //* for lvgl tick timer */
-  trm3_int_init(288-1, 1000-1);
+  touch_struct->touch_read_xy(&touch_struct->x_p[0], &touch_struct->y_p[0]);
 
   //* lvgl init */
   lv_init();
@@ -92,9 +91,12 @@ int main(void)
 
   lv_ex_btn_1();
 
+  //* for lvgl tick timer */
+  trm3_int_init(288-1, 1000-1);
+
   while(1)
   {
-    static uint8_t testNo = 1;
+    // static uint8_t testNo = 1;
 
     // if(testNo == 0)
     // {
@@ -160,14 +162,14 @@ void lv_ex_btn_1(void)
 
   lv_obj_t * btn1 = lv_btn_create(lv_scr_act(), NULL);
   lv_obj_set_event_cb(btn1, event_handler);
-  lv_obj_align(btn1, NULL, LV_ALIGN_CENTER, 0, 20);
+  lv_obj_align(btn1, NULL, LV_ALIGN_CENTER, 0, -40);
 
   label = lv_label_create(btn1, NULL);
   lv_label_set_text(label, "Button");
 
   lv_obj_t * btn2 = lv_btn_create(lv_scr_act(), NULL);
   lv_obj_set_event_cb(btn2, event_handler);
-  lv_obj_align(btn2, NULL, LV_ALIGN_CENTER, 0, 20);
+  lv_obj_align(btn2, NULL, LV_ALIGN_CENTER, 0, 40);
   lv_btn_set_checkable(btn2, true);
   lv_btn_toggle(btn2);
   lv_btn_set_fit2(btn2, LV_FIT_NONE, LV_FIT_TIGHT);

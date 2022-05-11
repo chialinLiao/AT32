@@ -396,7 +396,7 @@ void lcd_setblock(uint16_t xstart, uint16_t ystart, uint16_t xend, uint16_t yend
   */
 void lcd_writeonepoint(uint16_t color)
 {
-  //lcd_wr_data(color);
+  lcd_wr_data(color);
 }
 
 /**

@@ -221,7 +221,11 @@ static bool touchpad_is_pressed(void)
 static void touchpad_get_xy(lv_coord_t * x, lv_coord_t * y)
 {
     /*Your code comes here*/
-    touch_read_xy((void*)x, (void*)y);
+    uint16_t x_pos, y_pos;
+    touch_read_xy(&x_pos, &y_pos);
+
+    *x = (240 * (uint32_t)x_pos) / (0xed0);
+    *y = (320 * (uint32_t)y_pos) / (0xe60);
 }
 
 /*------------------
