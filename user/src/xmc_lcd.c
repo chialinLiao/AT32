@@ -86,11 +86,12 @@ void xmc_init(void)
   gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE10, GPIO_MUX_12);
   gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE11, GPIO_MUX_12);
   gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE12, GPIO_MUX_12);
+  gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE13, GPIO_MUX_12);
   gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE14, GPIO_MUX_12);
   gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE15, GPIO_MUX_12);
   gpio_pin_mux_config(GPIOF, GPIO_PINS_SOURCE0, GPIO_MUX_12);
   
-  /* ne1/nwe/noe lines configuration */
+  /* lcd cs(ne1)/ wr(nwe)/ rd(noe) lines configuration */
   gpio_init_struct.gpio_pins = GPIO_PINS_4 | GPIO_PINS_5 | GPIO_PINS_7 ;
   gpio_init_struct.gpio_mode = GPIO_MODE_MUX;
   gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
@@ -98,7 +99,7 @@ void xmc_init(void)
   gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
   gpio_init(GPIOD, &gpio_init_struct);
   
-  /* a0 lines configuration */
+  /* lcd rs(a0) lines configuration */
   gpio_init_struct.gpio_pins = GPIO_PINS_0;
   gpio_init_struct.gpio_mode = GPIO_MODE_MUX;
   gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
@@ -137,21 +138,6 @@ void xmc_init(void)
   gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
   gpio_init(GPIOB, &gpio_init_struct);
   
-  /* lcd rs/cs/wr/rd lines configuration */
-  gpio_init_struct.gpio_pins = GPIO_PINS_5;
-  gpio_init_struct.gpio_mode = GPIO_MODE_MUX;
-  gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
-  gpio_init_struct.gpio_pull = GPIO_PULL_NONE;
-  gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
-  gpio_init(GPIOC, &gpio_init_struct);
-  
-  gpio_init_struct.gpio_pins = GPIO_PINS_2 | GPIO_PINS_11 | GPIO_PINS_7;
-  gpio_init_struct.gpio_mode = GPIO_MODE_MUX;
-  gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
-  gpio_init_struct.gpio_pull = GPIO_PULL_NONE;
-  gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
-  gpio_init(GPIOD, &gpio_init_struct);
-
   /*-- xmc configuration ------------------------------------------------------*/
   xmc_norsram_default_para_init(&xmc_norsram_init_struct);
   xmc_norsram_init_struct.subbank = XMC_BANK1_NOR_SRAM1;
@@ -173,18 +159,18 @@ void xmc_init(void)
   xmc_norsram_timing_default_para_init(&rw_timing_struct, &w_timing_struct);
   rw_timing_struct.subbank = XMC_BANK1_NOR_SRAM1;
   rw_timing_struct.write_timing_enable = XMC_WRITE_TIMING_ENABLE;
-  rw_timing_struct.addr_setup_time = 0x5;
+  rw_timing_struct.addr_setup_time = 0x2;
   rw_timing_struct.addr_hold_time = 0x0;
-  rw_timing_struct.data_setup_time = 0x9;
+  rw_timing_struct.data_setup_time = 0x2;
   rw_timing_struct.bus_latency_time = 0x0;
   rw_timing_struct.clk_psc = 0x0;
   rw_timing_struct.data_latency_time = 0x0;
   rw_timing_struct.mode = XMC_ACCESS_MODE_A;
   w_timing_struct.subbank = XMC_BANK1_NOR_SRAM1;
   w_timing_struct.write_timing_enable = XMC_WRITE_TIMING_ENABLE;
-  w_timing_struct.addr_setup_time = 0x5;
+  w_timing_struct.addr_setup_time = 0x6;
   w_timing_struct.addr_hold_time = 0x0;
-  w_timing_struct.data_setup_time = 0x9;
+  w_timing_struct.data_setup_time = 0x6;
   w_timing_struct.bus_latency_time = 0x0;
   w_timing_struct.clk_psc = 0x0;
   w_timing_struct.data_latency_time = 0x0;
@@ -207,6 +193,10 @@ void lcd_init(void)
   /* init xmc */
   lcd_struct->xmc_init();
   
+  LCD_RESET_LOW;
+  
+  delay_ms(50);
+
   LCD_RESET_HIGH;
   
   delay_ms(50);
