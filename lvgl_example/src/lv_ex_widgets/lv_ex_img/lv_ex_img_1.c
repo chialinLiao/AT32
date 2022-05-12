@@ -1,4 +1,6 @@
-#include "../../../lv_examples.h"
+#include "../../lv_examples.h"
+
+
 #if LV_USE_IMG
 
 /* Find the image here: https://github.com/lvgl/lv_examples/tree/master/assets */

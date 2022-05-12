@@ -361,6 +361,7 @@
                     <state>$PROJ_DIR$\lvgl\src\lv_themes</state>
                     <state>$PROJ_DIR$\lvgl\src\lv_widgets</state>
                     <state>$PROJ_DIR$\lvgl\examples\porting</state>
+                    <state>$PROJ_DIR$\lvgl_example</state>
                 </option>
                 <option>
                     <name>CCStdIncCheck</name>
@@ -2581,6 +2582,21 @@
                 <name>$PROJ_DIR$\lvgl\src\lv_widgets\lv_win.c</name>
             </file>
         </group>
+    </group>
+    <group>
+        <name>lvgl_demo</name>
+        <file>
+            <name>$PROJ_DIR$\lvgl_example\src\assets\img_cogwheel_argb.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\lvgl_example\src\lv_ex_widgets\lv_ex_img\lv_ex_img_1.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\lvgl_example\src\lv_ex_widgets\lv_ex_img\lv_ex_img_2.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\lvgl_example\src\lv_ex_widgets\lv_ex_img\lv_ex_img_3.c</name>
+        </file>
     </group>
     <group>
         <name>lvgl_porting</name>
