@@ -130,20 +130,10 @@ static void disp_flush(lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_colo
     uint32_t size = (area->x2 - area->x1 + 1) * (area->y2 - area->y1 + 1);
 	lcd_setblock(area->x1, area->y1, area->x2, area->y2);
 
-    // DMA1_CHANNEL1->ctrl    &= ~(uint16_t)1;
-    // DMA1_CHANNEL1->paddr  = (uint32_t)color_p;
-    // DMA1_CHANNEL1->dtcnt = size / 2;
-    // DMA1_CHANNEL1->ctrl    |= (uint16_t)1;
-
-    //! now, lcd with dma transition can not work normally,
-    //! so use the polling method to do it to verify lvgl porting is ok or not.
-    for(uint32_t i=0; i<size; i++)
-    {
-        uint16_t color = color_p->full;
-        color_p++;
-        lcd_writeonepoint(color);
-    }
-    lv_disp_flush_ready(disp_drv);
+    DMA1_CHANNEL1->ctrl  &= ~(uint16_t)1;
+    DMA1_CHANNEL1->paddr = (uint32_t)color_p;
+    DMA1_CHANNEL1->dtcnt = size;
+    DMA1_CHANNEL1->ctrl  |= (uint16_t)1;
 
     /* IMPORTANT!!!
     * Inform the graphics library that you are ready with the flushing*/
