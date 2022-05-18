@@ -2586,21 +2586,15 @@
     </group>
     <group>
         <name>lvgl_demo</name>
-        <file>
-            <name>$PROJ_DIR$\lvgl_example\src\assets\img_cogwheel_argb.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\lvgl_example\src\lv_ex_widgets\lv_ex_img\lv_ex_img_1.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\lvgl_example\src\lv_ex_widgets\lv_ex_img\lv_ex_img_2.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\lvgl_example\src\lv_ex_widgets\lv_ex_img\lv_ex_img_3.c</name>
-        </file>
     </group>
     <group>
         <name>lvgl_porting</name>
+        <file>
+            <name>$PROJ_DIR$\lvgl\examples\porting\lv_fs_fatfs.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\lvgl\examples\porting\lv_fs_if.c</name>
+        </file>
         <file>
             <name>$PROJ_DIR$\lvgl\examples\porting\lv_port_disp_template.c</name>
         </file>

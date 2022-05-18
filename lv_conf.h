@@ -180,7 +180,7 @@ typedef void * lv_group_user_data_t;
 #define LV_USE_GPU_STM32_DMA2D  0
 
 /* 1: Enable file system (might be required for images */
-#define LV_USE_FILESYSTEM       0
+#define LV_USE_FILESYSTEM       1
 #if LV_USE_FILESYSTEM
 /*Declare the type of the user data of file system drivers (can be e.g. `void *`, `int`, `struct`)*/
 typedef void * lv_fs_drv_user_data_t;
@@ -689,6 +689,15 @@ typedef void * lv_obj_user_data_t;
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)    /* Disable warnings for Visual Studio*/
 #  define _CRT_SECURE_NO_WARNINGS
 #endif
+
+/*File system interface*/ 
+//* the fs porting code ref from lvgl web (git)
+//* https://github.com/lvgl/lv_fs_if/tree/release/v7
+#define LV_USE_FS_IF	1
+#if LV_USE_FS_IF
+#  define LV_FS_IF_FATFS    '\S'
+#  define LV_FS_IF_PC       '\0'
+#endif  /*LV_USE_FS_IF*/
 
 /*--END OF LV_CONF_H--*/
 

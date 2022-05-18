@@ -34,63 +34,50 @@
 #include "lv_port_disp_template.h"
 #include "lv_port_indev_template.h"
 #include "ff.h" 
+#include "lv_fs_if.h"
 
-/** @addtogroup AT32F435_periph_examples
-  * @{
-  */
-  
-/** @addtogroup 435_XMC_lcd_touch_16bit XMC_lcd_touch_16bit
-  * @{
-  */
 
-/** typdef 
-*/
+/**========================================================================
+ *                           typdef
+ *========================================================================**/
 typedef enum
 {
   TEST_FAIL = 0,
   TEST_SUCCESS,
 } test_result_type;
 
-/** define 
-*/
 
-/** macro 
-*/
+/**========================================================================
+ *                           define
+ *========================================================================**/
 
-/** variables 
-*/
-uint16_t point_color;
-uint16_t point_index = 0;
 
-const uint16_t color_arr[] = {
-  WHITE, BLACK, BLUE, BRED, GRED, GBLUE, RED, MAGENTA, GREEN, CYAN, YELLOW, BROWN, BRRED, GRAY };
+/**========================================================================
+ *                           macro
+ *========================================================================**/
 
-//* fatfs
+
+/**========================================================================
+ *                           variable
+ *========================================================================**/
 FATFS fs;
-FIL file;
-BYTE work[FF_MAX_SS];
 
-/** functions 
-*/
+
+/**========================================================================
+ *                           function
+ *========================================================================**/
 uint8_t buffer_compare(uint8_t* pbuffer1, uint8_t* pbuffer2, uint16_t buffer_length);
 static void sd_test_error(void);
 static void nvic_configuration(void);
+static test_result_type fatfs_test(void);
 void trm3_int_init(u16 arr, u16 psc);
-
-/** demo from external  
-*/
-extern void lv_ex_img_1(void);
-extern void lv_ex_img_2(void);
-extern void lv_ex_img_3(void);
+static void my_lvgl_test (void);
 
 
 /**
-  * @brief  compares two buffers.
-  * @param  pbuffer1, pbuffer2: buffers to be compared.
-  * @param  buffer_length: buffer's length
-  * @retval 1: pbuffer1 identical to pbuffer2
-  *         0: pbuffer1 differs from pbuffer2
-  */
+ * @brief 
+ * 
+ */
 uint8_t buffer_compare(uint8_t* pbuffer1, uint8_t* pbuffer2, uint16_t buffer_length)
 {
   while(buffer_length--)
@@ -105,6 +92,7 @@ uint8_t buffer_compare(uint8_t* pbuffer1, uint8_t* pbuffer2, uint16_t buffer_len
   return 1;
 }
 
+
 /**
   * @brief  led2 on off every 300ms for sd test error.
   * @param  none
@@ -118,6 +106,7 @@ static void sd_test_error(void)
   delay_ms(300);
 }
 
+
 /**
   * @brief  configures sdio1 irq channel.
   * @param  none
@@ -129,6 +118,7 @@ static void nvic_configuration(void)
   nvic_irq_enable(SDIO1_IRQn, 1, 0);
 }
 
+
 /**
   * @brief  fatfs file read/write test.
   * @param  none
@@ -137,84 +127,86 @@ static void nvic_configuration(void)
   */
 static test_result_type fatfs_test(void)
 {
+  FIL file;
+  BYTE work[FF_MAX_SS];
   FRESULT ret; 
+  
   char filename[] = "1:/test1.txt";
-  const char wbuf[] = "this is my file for test fatfs!\r\n";
+  const char wbuf[] = "this is my file for test fatfs! \r\n";
   char rbuf[50];
   UINT bytes_written = 0;
   UINT bytes_read = 0;
+  
   DWORD fre_clust, fre_sect, tot_sect;
   FATFS* pt_fs;
-  
+
+  // mount
   ret = f_mount(&fs, "1:", 1);
   
-  if(ret){
-    printf("fs mount err:%d.\r\n", ret);
-    
-    if(ret == FR_NO_FILESYSTEM){
+  if(ret)
+  {
+    if(ret == FR_NO_FILESYSTEM)
+    {
       printf("create fatfs..\r\n");
       
       ret = f_mkfs("1:", 0, work, sizeof(work));
 
-      if(ret){
+      if(ret)
+      {
         printf("creates fatfs err:%d.\r\n", ret);
         return TEST_FAIL;
       }
-      else{
+      else
         printf("creates fatfs ok.\r\n");
-      }
       
-      ret = f_mount(NULL, "1:", 1);
-      ret = f_mount(&fs, "1:", 1);
+      ret = f_mount(NULL, "1:", 1); // unmount
+      ret = f_mount(&fs, "1:", 1);  // mount
       
-      if(ret){
+      if(ret)
+      {
         printf("fs mount err:%d.\r\n", ret);
         return TEST_FAIL;
       }
-      else{
+      else
         printf("fs mount ok.\r\n");
-      }
     }
-    else{
+    else
+    {
+      printf("fs mount err:%d.\r\n", ret);
       return TEST_FAIL;
     }
   }
-  else{
+  else
     printf("fs mount ok.\r\n");
-  }
   
+  // open
   ret = f_open(&file, filename, FA_READ | FA_WRITE | FA_CREATE_ALWAYS);
-  if(ret){
+  if(ret)
     printf("open file err:%d.\r\n", ret);
-  }
-  else{
+  else
     printf("open file ok.\r\n");
-  }
- 
+
+  // write
   ret = f_write(&file, wbuf, sizeof(wbuf), &bytes_written);
-  if(ret){
+  if(ret)
     printf("write file err:%d.\r\n", ret);
-  }
-  else{
+  else
     printf("write file ok, byte:%u.\r\n", bytes_written);
-  }
   
+  // read
   f_lseek(&file, 0);
   ret = f_read(&file, rbuf, sizeof(rbuf), &bytes_read);
-  if(ret){
+  if(ret)
     printf("read file err:%d.\r\n", ret);
-  }
-  else{
+  else
     printf("read file ok, byte:%u.\r\n", bytes_read);
-  }
-  
+    
+  // close
   ret = f_close(&file);
-  if(ret){
+  if(ret)
     printf("close file err:%d.\r\n", ret);
-  }
-  else{
+  else
     printf("close file ok.\r\n");
-  }
   
   pt_fs = &fs;
   /* get volume information and free clusters of drive 1 */
@@ -242,62 +234,11 @@ static test_result_type fatfs_test(void)
   return TEST_SUCCESS;
 }
 
-/* gloable functions ---------------------------------------------------------*/
+
 /**
-  * @brief  main function.
-  * @param  none
-  * @retval none
-  */
-int main(void)
-{
-  touch_struct = &touch_dev_struct;
-  lcd_struct = &lcd_dev_struct;
-  system_clock_config();
-  at32_board_init();
-
-  uart_print_init(115200);
-
-  lcd_struct->lcd_init();
-  point_color = GBLUE;
-  lcd_struct->lcd_clear(point_color);
-  
-  touch_struct->init();
-  touch_struct->touch_read_xy(&touch_struct->x_p[0], &touch_struct->y_p[0]);
-
-  //* lvgl init */
-  lv_init();
-  lv_port_disp_init();
-  lv_port_indev_init();
-
-  //* demo
-  static uint8_t img_demo = 2;
-  if(img_demo == 0)       lv_ex_img_1();
-  else if(img_demo == 1)  lv_ex_img_2();
-  else                    lv_ex_img_3();
-
-  //* for lvgl tick timer */
-  trm3_int_init(288-1, 1000-1);
-  
-  //* enable sdio
-  nvic_configuration();
-  
-  printf("start test fatfs r0.14b..\r\n");
-  
-  if(TEST_SUCCESS != fatfs_test())
-  {
-    while(1)
-    {
-      sd_test_error();
-    }
-  }
-  
-  /* all tests pass, led3 and led4 fresh */
-  while(1)
-  {
-    lv_task_handler(); 
-  }
-}
-
+ * @brief 
+ * 
+ */
 void trm3_int_init(u16 arr, u16 psc)
 {
   /* enable tmr3 clock */
@@ -314,20 +255,82 @@ void trm3_int_init(u16 arr, u16 psc)
   tmr_counter_enable(TMR3, TRUE);  
 }
  
+
+/**
+ * @brief 
+ * 
+ */
 void TMR3_GLOBAL_IRQHandler(void)
 { 		  
-  TMR3->ists = 0;;
-  
+  TMR3->ists = 0;
   lv_tick_inc(1);	    
-  //at32_led_toggle(LED2); 
 }
 
 
+/**
+ * @brief 
+ * 
+ */
+static void my_lvgl_test (void)
+{
+  lv_obj_t * img = lv_img_create(lv_scr_act(), NULL);
+  
+  //* put a file name is called images.bin will be load and play
+  //* please use the lvgl bmp online convert tool to do it.
+  lv_img_set_src(img, "S:/images.bin");
+  
+  lv_obj_align(img, NULL, LV_ALIGN_CENTER, 0, 0);
+}
 
 
 /**
-  * @}
-  */ 
+ * @brief 
+ * @return 
+ */
+int main(void)
+{
+  system_clock_config();
+  at32_board_init();
+  uart_print_init(115200);
+
+  touch_struct = &touch_dev_struct;
+  lcd_struct = &lcd_dev_struct;
+
+  lcd_struct->lcd_init();
+  lcd_struct->lcd_clear(GBLUE);
+  
+  touch_struct->init();
+  touch_struct->touch_read_xy(&touch_struct->x_p[0], &touch_struct->y_p[0]);
+
+  //* lvgl init
+  lv_init();
+  lv_port_disp_init();
+  lv_port_indev_init();
+  lv_fs_if_init();
+
+  //* for lvgl tick timer (1ms)
+  trm3_int_init(288-1, 1000-1);
+  
+  //* enable sdio int
+  nvic_configuration();
+  
+  //! fat fs test
+  if(TEST_SUCCESS != fatfs_test()){
+    while(1)  sd_test_error();
+  }
+
+  //! not detecting weather the sd card is inserted or not
+  //! so must be keeping sd card in slot, if not fatfs can not be work normally  
+  f_mount(&fs, "1:", 1);
+  
+  my_lvgl_test();
+    
+  while(1)
+  {
+    lv_task_handler(); 
+  }
+}
+
 
 /**
   * @}
