@@ -2230,5 +2230,8 @@
         <file>
             <name>$PROJ_DIR$\user\src\main.c</name>
         </file>
+        <file>
+            <name>$PROJ_DIR$\user\src\qspi_cmd_esmt32m.c</name>
+        </file>
     </group>
 </project>

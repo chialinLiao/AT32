@@ -26,78 +26,87 @@
 
 #include "at32f435_437_board.h"
 #include "at32f435_437_clock.h"
+#include <string.h>
 
-/** @addtogroup AT32F435_periph_template
+/** @addtogroup AT32F435_periph_examples
   * @{
   */
 
-/** @addtogroup 435_LED_toggle LED_toggle
+/** @addtogroup 435_QSPI_command_port_using_dma_in_qpi_mode QSPI_command_port_using_dma_in_qpi_mode
   * @{
   */
 
-#define DELAY                            100
-#define FAST                             1
-#define SLOW                             4
+extern void qspi_data_read(uint32_t addr, uint32_t total_len, uint8_t* buf);
+extern void qspi_data_write(uint32_t addr, uint32_t total_len, uint8_t* buf);
+extern void qspi_erase(uint32_t sec_addr);
+extern void esmt32m_qpi_mode_init(void);
 
-uint8_t g_speed = FAST;
+#define TEST_SIZE                        4096
+/* use dma transmit must align at word */
+#if defined ( __ICCARM__ ) /* iar compiler */
+  #pragma data_alignment=4
+#endif
+ALIGNED_HEAD uint8_t wbuf[TEST_SIZE] ALIGNED_TAIL;
 
-void button_exint_init(void);
-void button_isr(void);
+#if defined ( __ICCARM__ ) /* iar compiler */
+  #pragma data_alignment=4
+#endif
+ALIGNED_HEAD uint8_t rbuf[TEST_SIZE] ALIGNED_TAIL;
 
 /**
-  * @brief  configure button exint
+  * @brief  qspi config
   * @param  none
   * @retval none
   */
-void button_exint_init(void)
+void qspi_config(void)
 {
-  exint_init_type exint_init_struct;
+  gpio_init_type gpio_init_struct;
+  /* enable the dma clock */
+  crm_periph_clock_enable(CRM_DMA2_PERIPH_CLOCK, TRUE);
 
-  crm_periph_clock_enable(CRM_SCFG_PERIPH_CLOCK, TRUE);
-  scfg_exint_line_config(SCFG_PORT_SOURCE_GPIOA, SCFG_PINS_SOURCE0);
+  /* enable the qspi clock */
+  crm_periph_clock_enable(CRM_QSPI1_PERIPH_CLOCK, TRUE);
 
-  exint_default_para_init(&exint_init_struct);
-  exint_init_struct.line_enable = TRUE;
-  exint_init_struct.line_mode = EXINT_LINE_INTERRUPUT;
-  exint_init_struct.line_select = EXINT_LINE_0;
-  exint_init_struct.line_polarity = EXINT_TRIGGER_RISING_EDGE;
-  exint_init(&exint_init_struct);
+  /* enable the pin clock */
+  crm_periph_clock_enable(CRM_GPIOF_PERIPH_CLOCK, TRUE);
+  crm_periph_clock_enable(CRM_GPIOG_PERIPH_CLOCK, TRUE);
 
-  nvic_priority_group_config(NVIC_PRIORITY_GROUP_4);
-  nvic_irq_enable(EXINT0_IRQn, 0, 0);
-}
+  /* set default parameter */
+  gpio_default_para_init(&gpio_init_struct);
 
-/**
-  * @brief  button handler function
-  * @param  none
-  * @retval none
-  */
-void button_isr(void)
-{
-  /* delay 5ms */
-  delay_ms(5);
+  /* configure the io0 gpio */
+  gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
+  gpio_init_struct.gpio_out_type  = GPIO_OUTPUT_PUSH_PULL;
+  gpio_init_struct.gpio_mode = GPIO_MODE_MUX;
+  gpio_init_struct.gpio_pins = GPIO_PINS_8;
+  gpio_init_struct.gpio_pull = GPIO_PULL_NONE;
+  gpio_init(GPIOF, &gpio_init_struct);
+  gpio_pin_mux_config(GPIOF, GPIO_PINS_SOURCE8, GPIO_MUX_10);
 
-  /* clear interrupt pending bit */
-  exint_flag_clear(EXINT_LINE_0);
+  /* configure the io1 gpio */
+  gpio_init_struct.gpio_pins = GPIO_PINS_9;
+  gpio_init(GPIOF, &gpio_init_struct);
+  gpio_pin_mux_config(GPIOF, GPIO_PINS_SOURCE9, GPIO_MUX_10);
 
-  /* check input pin state */
-  if(SET == gpio_input_data_bit_read(USER_BUTTON_PORT, USER_BUTTON_PIN))
-  {
-    if(g_speed == SLOW)
-      g_speed = FAST;
-    else
-      g_speed = SLOW;
-  }
-}
+  /* configure the io2 gpio */
+  gpio_init_struct.gpio_pins = GPIO_PINS_7;
+  gpio_init(GPIOF, &gpio_init_struct);
+  gpio_pin_mux_config(GPIOF, GPIO_PINS_SOURCE7, GPIO_MUX_9);
 
-/**
-  * @brief  exint0 interrupt handler
-  * @param  none
-  * @retval none
-  */
-void EXINT0_IRQHandler(void)
-{
-  button_isr();
+  /* configure the io3 gpio */
+  gpio_init_struct.gpio_pins = GPIO_PINS_6;
+  gpio_init(GPIOF, &gpio_init_struct);
+  gpio_pin_mux_config(GPIOF, GPIO_PINS_SOURCE6, GPIO_MUX_9);
+
+  /* configure the sck gpio */
+  gpio_init_struct.gpio_pins = GPIO_PINS_10;
+  gpio_init(GPIOF, &gpio_init_struct);
+  gpio_pin_mux_config(GPIOF, GPIO_PINS_SOURCE10, GPIO_MUX_9);
+
+  /* configure the cs gpio */
+  gpio_init_struct.gpio_pins = GPIO_PINS_6;
+  gpio_init(GPIOG, &gpio_init_struct);
+  gpio_pin_mux_config(GPIOG, GPIO_PINS_SOURCE6, GPIO_MUX_10);
 }
 
 /**
@@ -107,20 +116,71 @@ void EXINT0_IRQHandler(void)
   */
 int main(void)
 {
-  system_clock_config();
+  uint16_t i, err = 0;
 
+  system_clock_config();
   at32_board_init();
 
-  button_exint_init();
+  for(i = 0; i < TEST_SIZE; i++)
+  {
+    wbuf[i] = (uint8_t)i;
+    rbuf[i] = 0;
+  }
+  /* qspi config */
+  qspi_config();
+
+  /* switch to cmd port */
+  qspi_xip_enable(QSPI1, FALSE);
+
+  /* set sclk */
+  qspi_clk_division_set(QSPI1, QSPI_CLK_DIV_4);
+
+  /* set sck idle mode 0 */
+  qspi_sck_mode_set(QSPI1, QSPI_SCK_MODE_0);
+
+  /* set wip in bit 0 */
+  qspi_busy_config(QSPI1, QSPI_BUSY_OFFSET_0);
+
+  esmt32m_qpi_mode_init();
+
+  /* erase */
+  qspi_erase(0);
+
+  /* read */
+  qspi_data_read(0, TEST_SIZE, rbuf);
+
+  for(i = 0; i < TEST_SIZE; i++)
+  {
+    if(rbuf[i] != 0xFF)
+    {
+      err = 1;
+      break;
+    }
+  }
+
+  /* program */
+  qspi_data_write(0, TEST_SIZE, wbuf);
+
+  /* read */
+  qspi_data_read(0, TEST_SIZE, rbuf);
+
+  if(memcmp(rbuf, wbuf, TEST_SIZE))
+  {
+    err = 1;
+  }
 
   while(1)
   {
-    at32_led_toggle(LED2);
-    delay_ms(g_speed * DELAY);
-    at32_led_toggle(LED3);
-    delay_ms(g_speed * DELAY);
-    at32_led_toggle(LED4);
-    delay_ms(g_speed * DELAY);
+    if(err == 0)
+    {
+      at32_led_toggle(LED3);
+      delay_ms(300);
+    }
+    else
+    {
+      at32_led_toggle(LED2);
+      delay_ms(300);
+    }
   }
 }
 
