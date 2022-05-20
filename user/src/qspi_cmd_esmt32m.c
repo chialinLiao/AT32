@@ -33,8 +33,15 @@
 /** @addtogroup 435_QSPI_command_port_using_dma_in_qpi_mode
   * @{
   */
-  
-#define FLASH_PAGE_PROGRAM_SIZE          256
+
+#define DMA_QSPI_BUF_SIZE           1024
+#define FLASH_PAGE_PROGRAM_SIZE     256
+
+/* use dma transmit and receive must align at word */
+#if defined ( __ICCARM__ ) /* iar compiler */
+  #pragma data_alignment=4
+#endif
+static ALIGNED_HEAD uint8_t dma_buf[DMA_QSPI_BUF_SIZE] ALIGNED_TAIL;
 
 qspi_cmd_type esmt32m_cmd_config;
 
@@ -163,7 +170,7 @@ void qspi_dma_set(dma_dir_type dir, uint8_t* buf, uint32_t length)
   dma_init_type dma_init_struct;
   dma_reset(DMA2_CHANNEL1);
   dma_default_para_init(&dma_init_struct);
-  dma_init_struct.buffer_size = length / 4;  /* using word unit */
+  dma_init_struct.buffer_size = (length + 3) / 4;  /* using word unit, and round up */
   dma_init_struct.loop_mode_enable = FALSE;
   dma_init_struct.direction = dir;
   dma_init_struct.memory_base_addr = (uint32_t)buf;
@@ -191,25 +198,43 @@ void qspi_dma_set(dma_dir_type dir, uint8_t* buf, uint32_t length)
   */
 void qspi_data_read(uint32_t addr, uint32_t total_len, uint8_t* buf)
 { 
-  /* config qspi's dma mode */
-  qspi_dma_enable(QSPI1, TRUE);
-  qspi_dma_rx_threshold_set(QSPI1, QSPI_DMA_FIFO_THOD_WORD08);
+  uint32_t blk_sz;
+  
+  while(total_len > 0)
+  {  
+    if(DMA_QSPI_BUF_SIZE > total_len)
+      blk_sz = total_len;
+    else
+      blk_sz = DMA_QSPI_BUF_SIZE; 
+      
+    /* config qspi's dma mode */
+    qspi_dma_enable(QSPI1, TRUE);
+    qspi_dma_rx_threshold_set(QSPI1, QSPI_DMA_FIFO_THOD_WORD08);
 
-  /* config and enable dma */
-  qspi_dma_set(DMA_DIR_PERIPHERAL_TO_MEMORY, buf, total_len);
+    /* config and enable dma */
+    qspi_dma_set(DMA_DIR_PERIPHERAL_TO_MEMORY, dma_buf, blk_sz);
 
-  /* kick command */
-  esmt32m_cmd_read_config(&esmt32m_cmd_config, addr, total_len);
-  qspi_cmd_operation_kick(QSPI1, &esmt32m_cmd_config);
+    /* kick command */
+    esmt32m_cmd_read_config(&esmt32m_cmd_config, addr, blk_sz);
+    qspi_cmd_operation_kick(QSPI1, &esmt32m_cmd_config);
 
-  /* wait command completed */
-  while(qspi_flag_get(QSPI1, QSPI_CMDSTS_FLAG) == RESET);
-  qspi_flag_clear(QSPI1, QSPI_CMDSTS_FLAG);
+    /* wait command completed */
+    while(qspi_flag_get(QSPI1, QSPI_CMDSTS_FLAG) == RESET);
+    qspi_flag_clear(QSPI1, QSPI_CMDSTS_FLAG);
 
-  /* wait dma completed */
-  while(dma_flag_get(DMA2_FDT1_FLAG) == RESET);
-  dma_flag_clear(DMA2_FDT1_FLAG);  
-  qspi_dma_enable(QSPI1, FALSE);
+    /* wait dma completed */
+    while(dma_flag_get(DMA2_FDT1_FLAG) == RESET);
+    dma_flag_clear(DMA2_FDT1_FLAG);  
+    qspi_dma_enable(QSPI1, FALSE);
+
+    //* copy data to buf
+    for(uint16_t i=0; i<blk_sz; i++)
+      buf[i] = dma_buf[i]; 
+    
+    addr += blk_sz;
+    buf += blk_sz;
+    total_len -= blk_sz;
+  }
 }
 
 /**
@@ -220,7 +245,7 @@ void qspi_data_read(uint32_t addr, uint32_t total_len, uint8_t* buf)
   * @retval none
   */
 static void qspi_data_once_write(uint32_t addr, uint32_t sz, uint8_t* buf)
-{
+{  
   qspi_write_enable();
  
   /* config qspi's dma mode */
@@ -254,23 +279,31 @@ static void qspi_data_once_write(uint32_t addr, uint32_t sz, uint8_t* buf)
   * @retval none
   */
 void qspi_data_write(uint32_t addr, uint32_t total_len, uint8_t* buf)
-{
+{  
+  uint32_t page_off;
+  uint32_t page_remain;
   uint32_t blk_sz;
-  do
-  { /* send up to 256 bytes at one time */
-    if(total_len > FLASH_PAGE_PROGRAM_SIZE)
-    {
-      blk_sz = FLASH_PAGE_PROGRAM_SIZE;
-    }
-    else
-    {
+
+  while(total_len > 0)
+  {  
+    page_off = addr % FLASH_PAGE_PROGRAM_SIZE; 
+    page_remain = FLASH_PAGE_PROGRAM_SIZE - page_off;
+
+    if(page_remain > total_len)
       blk_sz = total_len;
-    }
-    qspi_data_once_write(addr, blk_sz, buf);
+    else
+      blk_sz = page_remain; 
+
+    //* cpoy data to dma buf (buffer have already alignment)
+    for(uint16_t i=0; i<blk_sz; i++)
+      dma_buf[i] = buf[i]; 
+    
+    /* send up to 256 bytes at one time */
+    qspi_data_once_write(addr, blk_sz, dma_buf);
     addr += blk_sz;
     buf += blk_sz;
     total_len -= blk_sz;
-  }while(total_len > 0);
+  }
 }
 
 /**

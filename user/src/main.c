@@ -41,17 +41,11 @@ extern void qspi_data_write(uint32_t addr, uint32_t total_len, uint8_t* buf);
 extern void qspi_erase(uint32_t sec_addr);
 extern void esmt32m_qpi_mode_init(void);
 
-#define TEST_SIZE                        4096
-/* use dma transmit must align at word */
-#if defined ( __ICCARM__ ) /* iar compiler */
-  #pragma data_alignment=4
-#endif
-ALIGNED_HEAD uint8_t wbuf[TEST_SIZE] ALIGNED_TAIL;
+#define TEST_SIZE   1024
+#define TEST_ADDR   0
 
-#if defined ( __ICCARM__ ) /* iar compiler */
-  #pragma data_alignment=4
-#endif
-ALIGNED_HEAD uint8_t rbuf[TEST_SIZE] ALIGNED_TAIL;
+uint8_t wbuf[TEST_SIZE];
+uint8_t rbuf[TEST_SIZE];
 
 /**
   * @brief  qspi config
@@ -133,7 +127,7 @@ int main(void)
   qspi_xip_enable(QSPI1, FALSE);
 
   /* set sclk */
-  qspi_clk_division_set(QSPI1, QSPI_CLK_DIV_4);
+  qspi_clk_division_set(QSPI1, QSPI_CLK_DIV_10);
 
   /* set sck idle mode 0 */
   qspi_sck_mode_set(QSPI1, QSPI_SCK_MODE_0);
@@ -144,10 +138,17 @@ int main(void)
   esmt32m_qpi_mode_init();
 
   /* erase */
-  qspi_erase(0);
+  if(TEST_SIZE > 0)
+  {
+    uint32_t erase_addr = TEST_ADDR - (TEST_ADDR % 4096);
+    uint32_t erase_times = TEST_SIZE / 4096; 
+
+    for(uint16_t i=0; i<=erase_times; i++)
+      qspi_erase(erase_addr + 4096 * erase_times);
+  }
 
   /* read */
-  qspi_data_read(0, TEST_SIZE, rbuf);
+  qspi_data_read(TEST_ADDR, TEST_SIZE, rbuf);
 
   for(i = 0; i < TEST_SIZE; i++)
   {
@@ -159,14 +160,18 @@ int main(void)
   }
 
   /* program */
-  qspi_data_write(0, TEST_SIZE, wbuf);
+  qspi_data_write(TEST_ADDR, TEST_SIZE, wbuf);
 
   /* read */
-  qspi_data_read(0, TEST_SIZE, rbuf);
+  qspi_data_read(TEST_ADDR, TEST_SIZE, rbuf);
 
-  if(memcmp(rbuf, wbuf, TEST_SIZE))
+  for(i = 0; i < TEST_SIZE; i++)
   {
-    err = 1;
+    if(rbuf[i] != wbuf[i])
+    {
+      err = 1;
+      break;
+    }
   }
 
   while(1)
