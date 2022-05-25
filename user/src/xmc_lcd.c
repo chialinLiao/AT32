@@ -215,110 +215,106 @@ void lcd_init(void)
   lcd_struct->lcd_id = lcd_struct->lcd_id << 8;
   lcd_struct->lcd_id |= lcd_rd_data();
   
-  lcd_wr_command(0xcf);  
-  lcd_wr_data(0x00); 
-  lcd_wr_data(0xc1); 
-  lcd_wr_data(0x30); 
-  lcd_wr_command(0xed);  
-  lcd_wr_data(0x64); 
-  lcd_wr_data(0x03); 
-  lcd_wr_data(0x12); 
-  lcd_wr_data(0x81); 
-  lcd_wr_command(0xe8);  
-  lcd_wr_data(0x85); 
-  lcd_wr_data(0x10); 
-  lcd_wr_data(0x7a); 
-  lcd_wr_command(0xcb);  
-  lcd_wr_data(0x39); 
-  lcd_wr_data(0x2c); 
-  lcd_wr_data(0x00); 
-  lcd_wr_data(0x34); 
-  lcd_wr_data(0x02); 
-  lcd_wr_command(0xf7);  
-  lcd_wr_data(0x20); 
-  lcd_wr_command(0xea);  
-  lcd_wr_data(0x00); 
-  lcd_wr_data(0x00); 
-  lcd_wr_command(0xc0);
-  lcd_wr_data(0x1b);
-  lcd_wr_command(0xc1);
-  lcd_wr_data(0x01); 
-  lcd_wr_command(0xc5);
-  lcd_wr_data(0x30); 
-  lcd_wr_data(0x30); 
-  lcd_wr_command(0xc7);
-  lcd_wr_data(0xb7); 
-  lcd_wr_command(0x36);
-  lcd_wr_data(0x48); 
-  lcd_wr_command(0x3a);   
-  lcd_wr_data(0x55); 
-  lcd_wr_command(0xb1);   
-  lcd_wr_data(0x00);   
-  lcd_wr_data(0x1a); 
-  lcd_wr_command(0xb6);
-  lcd_wr_data(0x0a); 
-  lcd_wr_data(0xa2); 
-  lcd_wr_command(0xf2);
-  lcd_wr_data(0x00); 
-  lcd_wr_command(0x26);
-  lcd_wr_data(0x01); 
-  lcd_wr_command(0xe0);
-  lcd_wr_data(0x0f); 
-  lcd_wr_data(0x2a); 
-  lcd_wr_data(0x28); 
-  lcd_wr_data(0x08); 
-  lcd_wr_data(0x0e); 
-  lcd_wr_data(0x08); 
-  lcd_wr_data(0x54); 
-  lcd_wr_data(0xa9); 
-  lcd_wr_data(0x43); 
-  lcd_wr_data(0x0a); 
-  lcd_wr_data(0x0f); 
-  lcd_wr_data(0x00); 
-  lcd_wr_data(0x00); 
-  lcd_wr_data(0x00); 
-  lcd_wr_data(0x00);      
-  lcd_wr_command(0xe1);
-  lcd_wr_data(0x00); 
-  lcd_wr_data(0x15); 
-  lcd_wr_data(0x17); 
-  lcd_wr_data(0x07); 
-  lcd_wr_data(0x11); 
-  lcd_wr_data(0x06); 
-  lcd_wr_data(0x2b); 
-  lcd_wr_data(0x56); 
-  lcd_wr_data(0x3c); 
-  lcd_wr_data(0x05); 
-  lcd_wr_data(0x10); 
-  lcd_wr_data(0x0f); 
-  lcd_wr_data(0x3f); 
-  lcd_wr_data(0x3f); 
-  lcd_wr_data(0x0f); 
-  lcd_wr_command(0x2b); 
+  lcd_wr_command(LCD_POWERB);
   lcd_wr_data(0x00);
-  lcd_wr_data(0x00);
+  lcd_wr_data(0x99);
+  lcd_wr_data(0X30);
+
+  lcd_wr_command(LCD_POWER_SEQ);
+  lcd_wr_data(0x67);
+  lcd_wr_data(0x03);
+  lcd_wr_data(0X12);
+  lcd_wr_data(0X81);
+
+  lcd_wr_command(LCD_DTCA);
+  lcd_wr_data(0x85);
   lcd_wr_data(0x01);
-  lcd_wr_data(0x3f);
-  lcd_wr_command(0x2a); 
+  lcd_wr_data(0x78);
+
+  lcd_wr_command(LCD_POWERA);
+  lcd_wr_data(0x39);
+  lcd_wr_data(0x2C);
+  lcd_wr_data(0x00);
+  lcd_wr_data(0x34);
+  lcd_wr_data(0x02);
+
+  lcd_wr_command(LCD_PRC);
+  lcd_wr_data(0x20);
+
+  lcd_wr_command(LCD_DTCB);
   lcd_wr_data(0x00);
   lcd_wr_data(0x00);
+
+  lcd_wr_command(LCD_POWER1);
+  lcd_wr_data(0x25);
+
+  lcd_wr_command(LCD_POWER2);
+  lcd_wr_data(0x10);
+
+  lcd_wr_command(LCD_VCOM1);
+  lcd_wr_data(0x40);
+  lcd_wr_data(0x3F);
+
+  lcd_wr_command(LCD_VCOM2);
+  lcd_wr_data(0xB0);
+
+  // Display Function Control
+  lcd_wr_command(LCD_DFC); 
   lcd_wr_data(0x00);
-  lcd_wr_data(0xef);   
-  lcd_wr_command(0x11);
-  delay_ms(120);
-  lcd_wr_command(0x29);
-  lcd_wr_command(0x36);
+  lcd_wr_data(0XC2);
+  
+  //* control data to gram dispay direction
+  lcd_wr_command(LCD_MAC);
+  lcd_wr_data(0x68);
+  
+  lcd_wr_command(LCD_PIXEL_FORMAT);
+  lcd_wr_data(0x55);
+    
+  lcd_wr_command(LCD_3GAMMA_EN);
+  lcd_wr_data(0x00);
+    
+  lcd_wr_command(LCD_GAMMA);
+  lcd_wr_data(0x01);
+  
+  //Set Gamma
+  lcd_wr_command(LCD_PGAMMA);
+  lcd_wr_data(0x0F);
+  lcd_wr_data(0x27);
+  lcd_wr_data(0x23);
+  lcd_wr_data(0x0B);
+  lcd_wr_data(0x0F);
+  lcd_wr_data(0x05);
+  lcd_wr_data(0x54);
+  lcd_wr_data(0x74);
+  lcd_wr_data(0x45);
+  lcd_wr_data(0x0A);
+  lcd_wr_data(0x17);
+  lcd_wr_data(0x0A);
+  lcd_wr_data(0x1C);
+  lcd_wr_data(0x0E);
+  lcd_wr_data(0x08);  
+  
+  lcd_wr_command(LCD_NGAMMA);
   lcd_wr_data(0x08);
-  lcd_wr_command(0x2a);
-  lcd_wr_data(0x00);
-  lcd_wr_data(0x00);
-  lcd_wr_data(0xef >> 8);
-  lcd_wr_data(0xef & 0xff);
-  lcd_wr_command(0x2b);
-  lcd_wr_data(0x00);
-  lcd_wr_data(0x00);
-  lcd_wr_data(0x13f >> 8);
-  lcd_wr_data(0x13f & 0xff);
+  lcd_wr_data(0x1A);
+  lcd_wr_data(0x1E);
+  lcd_wr_data(0x03);
+  lcd_wr_data(0x0F);
+  lcd_wr_data(0x05);
+  lcd_wr_data(0x2E);
+  lcd_wr_data(0x25);
+  lcd_wr_data(0x3B);
+  lcd_wr_data(0x01);
+  lcd_wr_data(0x06);
+  lcd_wr_data(0x05);
+  lcd_wr_data(0x25);
+  lcd_wr_data(0x33);
+  lcd_wr_data(0x0F);
+      
+  lcd_wr_command(LCD_SLEEP_OUT);
+  lcd_wr_command(LCD_DISPLAY_ON);
+  lcd_wr_command(LCD_DINVOFF);
+  
   LCD_BL_HIGH;  
 }
 
@@ -410,11 +406,10 @@ void lcd_clear(uint16_t color)
 {
   uint32_t i;
   
-  lcd_struct->lcd_setblock(0, 0, 240, 320);
+  lcd_struct->lcd_setblock(0, 0, LCD_HOR_RES, LCD_VER_RES);
   
-  for(i = 0; i < 76800; i++)
+  for(i = 0; i < LCD_HOR_RES*LCD_VER_RES; i++)
   {
-    //lcd_writeonepoint(color);
     lcd_wr_data(color);
   }
 }

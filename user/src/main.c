@@ -273,13 +273,27 @@ void TMR3_GLOBAL_IRQHandler(void)
  */
 static void my_lvgl_test (void)
 {
-  lv_obj_t * img = lv_img_create(lv_scr_act(), NULL);
+  static lv_obj_t * img = NULL;
   
-  //* put a file name is called images.bin will be load and play
-  //* please use the lvgl bmp online convert tool to do it.
-  lv_img_set_src(img, "S:/images.bin");
+  static uint16_t pic_num = 20;
+  uint8_t filename[255] = {0};
+
+  if(img == NULL)
+    img = lv_img_create(lv_scr_act(), NULL);
+  
+  //* test paste image on the screen continuously 
+  //* to be ensure the image size, bcz the image convert size bigger than emwin
+  sprintf((char*)filename, "S:/A%03d.bin", pic_num);
+
+  //! now, test result will happened the out of memory (head), 
+  //! need to figure out what cause that 
+
+  lv_img_set_src(img, filename);
   
   lv_obj_align(img, NULL, LV_ALIGN_CENTER, 0, 0);
+
+  if(++pic_num > 200)
+    pic_num = 20;
 }
 
 
@@ -319,15 +333,15 @@ int main(void)
     while(1)  sd_test_error();
   }
 
-  //! not detecting weather the sd card is inserted or not
+  //! not detecting the sd card is inserted or not
   //! so must be keeping sd card in slot, if not fatfs can not be work normally  
   f_mount(&fs, "1:", 1);
-  
-  my_lvgl_test();
     
   while(1)
   {
+    my_lvgl_test();
     lv_task_handler(); 
+    delay_ms(10);
   }
 }
 
